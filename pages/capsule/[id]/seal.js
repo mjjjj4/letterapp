@@ -36,21 +36,22 @@ export default function SealCapsule() {
         console.log('Fetching capsule with ID:', id, 'for user:', user.id)
 
         // Fetch capsule
-        const { data: capsuleData, error: capsuleError } = await supabase
+        const { data: capsuleArray, error: capsuleError } = await supabase
           .from('capsules')
           .select('*')
           .eq('id', id)
           .eq('user_id', user.id)
-          .single()
 
         console.log('Supabase fetch error:', capsuleError)
-        console.log('Supabase capsule data:', capsuleData)
+        console.log('Supabase response (array):', capsuleArray)
+        console.log('Response length:', capsuleArray?.length)
 
         if (capsuleError) {
           const errorMsg = `Capsule fetch error: ${capsuleError.message}`
           console.error(errorMsg)
           setError(errorMsg)
-        } else if (capsuleData) {
+        } else if (capsuleArray && capsuleArray.length > 0) {
+          const capsuleData = capsuleArray[0]
           console.log('Capsule loaded:', {
             id: capsuleData.id,
             title: capsuleData.title,

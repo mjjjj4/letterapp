@@ -25,31 +25,50 @@ export default async function handler(req, res) {
   try {
     console.log('Fetching capsule with ID:', capsuleId)
 
-    // Verify the capsule exists and belongs to the user
-    const { data: capsule, error: fetchError } = await supabase
+    // Verify the capsule exists
+    const { data: capsuleArray, error: fetchError } = await supabase
       .from('capsules')
       .select('*')
       .eq('id', capsuleId)
-      .single()
 
     console.log('Supabase fetch error:', fetchError)
-    console.log('Supabase capsule data:', capsule)
+    console.log('Supabase response (array):', capsuleArray)
+    console.log('Response length:', capsuleArray?.length)
 
     if (fetchError) {
       console.error('Supabase error details:', fetchError)
       return res.status(404).json({
         error: `Failed to fetch capsule: ${fetchError.message}`,
         supabaseError: fetchError,
-      })
-    }
-
-    if (!capsule) {
-      console.error('Capsule not found for ID:', capsuleId)
-      return res.status(404).json({
-        error: 'Capsule not found',
         capsuleId: capsuleId,
       })
     }
+
+    if (!capsuleArray || capsuleArray.length === 0) {
+      console.error('Capsule not found for ID:', capsuleId)
+      return res.status(404).json({
+        error: `Capsule with ID "${capsuleId}" not found`,
+        capsuleId: capsuleId,
+        found: false,
+      })
+    }
+
+    if (capsuleArray.length > 1) {
+      console.error('Multiple capsules found for ID:', capsuleId)
+      return res.status(500).json({
+        error: 'Database error: multiple capsules with same ID',
+        capsuleId: capsuleId,
+      })
+    }
+
+    const capsule = capsuleArray[0]
+
+    console.log('Capsule fetched successfully:', {
+      id: capsule.id,
+      title: capsule.title,
+      status: capsule.status,
+      userId: capsule.user_id,
+    })
 
     console.log('Capsule found:', {
       id: capsule.id,

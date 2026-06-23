@@ -60,30 +60,38 @@ export default async function handler(req, res) {
       console.log(`Fetching capsule with ID: ${capsuleId}`)
 
       // Fetch the capsule
-      const { data: capsule, error: fetchError } = await supabase
+      const { data: capsuleArray, error: fetchError } = await supabase
         .from('capsules')
         .select('*')
         .eq('id', capsuleId)
-        .single()
 
       console.log('Supabase fetch error:', fetchError)
-      console.log('Supabase capsule:', capsule)
+      console.log('Supabase response (array):', capsuleArray)
+      console.log('Response length:', capsuleArray?.length)
 
       if (fetchError) {
         console.error('Error fetching capsule:', fetchError)
         return res.status(404).json({
-          error: `Capsule not found: ${fetchError.message}`,
+          error: `Capsule fetch failed: ${fetchError.message}`,
           capsuleId: capsuleId,
         })
       }
 
-      if (!capsule) {
-        console.error('Capsule is null, ID:', capsuleId)
+      if (!capsuleArray || capsuleArray.length === 0) {
+        console.error('Capsule not found for ID:', capsuleId)
         return res.status(404).json({
-          error: 'Capsule not found',
+          error: `Capsule with ID "${capsuleId}" not found`,
           capsuleId: capsuleId,
         })
       }
+
+      const capsule = capsuleArray[0]
+
+      console.log('Capsule found:', {
+        id: capsule.id,
+        title: capsule.title,
+        status: capsule.status,
+      })
 
       console.log('Capsule found:', {
         id: capsule.id,
