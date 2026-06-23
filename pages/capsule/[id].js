@@ -13,39 +13,63 @@ export default function CapsuleDetail() {
   useEffect(() => {
     const checkUserAndFetchCapsule = async () => {
       try {
+        console.log('=== Capsule Details Page Load ===')
+        console.log('Capsule ID from URL:', id)
+
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {
+          console.log('Auth error or no user, redirecting to login')
           router.push('/login')
           return
         }
 
+        console.log('User authenticated:', user.id)
         setUser(user)
 
-        if (!id) return
+        if (!id) {
+          console.log('No ID in URL yet')
+          return
+        }
 
-        // Fetch capsule
-        const { data: capsuleData, error: capsuleError } = await supabase
+        console.log('Fetching capsule:', id)
+
+        // Fetch capsule (using array response to avoid .single() error)
+        const { data: capsuleArray, error: capsuleError } = await supabase
           .from('capsules')
           .select('*')
           .eq('id', id)
           .eq('user_id', user.id)
-          .single()
+
+        console.log('Supabase error:', capsuleError)
+        console.log('Supabase response (array):', capsuleArray)
+        console.log('Response length:', capsuleArray?.length)
 
         if (capsuleError) {
-          if (capsuleError.code === 'PGRST116') {
-            setError('Capsule not found')
-          } else {
-            setError(capsuleError.message)
-          }
-        } else if (capsuleData) {
+          console.error('Capsule fetch error:', capsuleError.message)
+          setError(`Failed to load capsule: ${capsuleError.message}`)
+        } else if (!capsuleArray || capsuleArray.length === 0) {
+          console.error('Capsule not found:', id)
+          setError(`Capsule not found. ID: ${id}`)
+        } else if (capsuleArray.length > 1) {
+          console.error('Multiple capsules found:', id)
+          setError('Database error: multiple capsules with same ID')
+        } else {
+          const capsuleData = capsuleArray[0]
+          console.log('Capsule loaded successfully:', {
+            id: capsuleData.id,
+            title: capsuleData.title,
+            status: capsuleData.status,
+            user_id: capsuleData.user_id,
+          })
+          console.log('Button visibility: status === "draft"?', capsuleData.status === 'draft')
           setCapsule(capsuleData)
         }
 
         setLoading(false)
       } catch (err) {
-        console.error('Error:', err)
-        setError('An error occurred')
+        console.error('Error in checkUserAndFetchCapsule:', err)
+        setError(`An error occurred: ${err.message}`)
         setLoading(false)
       }
     }
@@ -141,7 +165,7 @@ export default function CapsuleDetail() {
             </div>
           </div>
 
-          {isDraft && (
+          {isDraft ? (
             <div style={styles.buttonGroup}>
               <button
                 onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
@@ -155,6 +179,12 @@ export default function CapsuleDetail() {
               >
                 Seal & Pay
               </button>
+            </div>
+          ) : (
+            <div style={styles.debugInfo}>
+              <p style={styles.debugText}>
+                Status is "{capsule.status}" (not "draft"), so no edit/seal buttons are shown
+              </p>
             </div>
           )}
         </div>
@@ -428,5 +458,18 @@ const styles = {
     fontSize: '18px',
     color: '#666',
     fontFamily: 'Arial, sans-serif',
+  },
+  debugInfo: {
+    padding: '15px',
+    backgroundColor: '#e7f3ff',
+    borderLeft: '4px solid #2196F3',
+    borderRadius: '4px',
+    marginTop: '10px',
+  },
+  debugText: {
+    fontSize: '13px',
+    color: '#1976D2',
+    margin: 0,
+    fontFamily: 'monospace',
   },
 }

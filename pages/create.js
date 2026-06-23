@@ -142,19 +142,33 @@ export default function CreateCapsule() {
         personality_words: formData.personality_words ? formData.personality_words.split(',').map(w => w.trim()) : null,
       }
 
-      console.log('Capsule data being inserted:', capsuleData)
+      console.log('=== Creating Capsule ===')
+      console.log('User ID:', user.id)
+      console.log('Capsule Title:', formData.title)
+      console.log('Status being set to:', capsuleData.status)
+      console.log('Full capsule data:', capsuleData)
 
       const { data, error: insertError } = await supabase
         .from('capsules')
         .insert([capsuleData])
         .select()
 
+      console.log('Supabase insert response:')
+      console.log('  Error:', insertError)
+      console.log('  Data:', data)
+
       if (insertError) {
         console.error('Supabase insert error:', insertError)
         throw new Error(`Failed to save capsule: ${insertError.message}`)
       }
 
-      console.log('Capsule created successfully:', data)
+      if (data && data.length > 0) {
+        console.log('Capsule created successfully:')
+        console.log('  ID:', data[0].id)
+        console.log('  Status:', data[0].status)
+        console.log('  User ID:', data[0].user_id)
+      }
+
       router.push('/dashboard')
     } catch (err) {
       console.error('Error in handleSubmit:', err)
