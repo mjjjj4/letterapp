@@ -26,13 +26,28 @@ export default function CreateCapsule() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error) {
+          console.error('Auth error:', error)
+          router.push('/login')
+          return
+        }
+
+        if (!user) {
+          console.warn('No user found, redirecting to login')
+          router.push('/login')
+          return
+        }
+
+        console.log('User authenticated:', user.id)
+        setUser(user)
+        setLoading(false)
+      } catch (err) {
+        console.error('Error checking user:', err)
         router.push('/login')
-        return
       }
-      setUser(user)
-      setLoading(false)
     }
     checkUser()
   }, [router])
@@ -90,6 +105,7 @@ export default function CreateCapsule() {
     setError('')
     setSubmitting(true)
 
+    // Validate form fields
     if (!formData.title || !formData.message || !formData.deliver_at) {
       setError('Title, message, and delivery date are required')
       setSubmitting(false)
@@ -97,6 +113,16 @@ export default function CreateCapsule() {
     }
 
     try {
+      // Check if user exists and is authenticated
+      if (!user || !user.id) {
+        console.error('User object:', user)
+        setError('Authentication error: You must be logged in to create a capsule')
+        setSubmitting(false)
+        return
+      }
+
+      console.log('Creating capsule for user:', user.id)
+
       let filePath = null
       if (file) {
         filePath = await uploadFile(file, user.id)
@@ -116,17 +142,23 @@ export default function CreateCapsule() {
         personality_words: formData.personality_words ? formData.personality_words.split(',').map(w => w.trim()) : null,
       }
 
-      const { error: insertError } = await supabase
+      console.log('Capsule data being inserted:', capsuleData)
+
+      const { data, error: insertError } = await supabase
         .from('capsules')
         .insert([capsuleData])
+        .select()
 
       if (insertError) {
-        throw insertError
+        console.error('Supabase insert error:', insertError)
+        throw new Error(`Failed to save capsule: ${insertError.message}`)
       }
 
+      console.log('Capsule created successfully:', data)
       router.push('/dashboard')
     } catch (err) {
-      setError(err.message || 'Failed to create capsule')
+      console.error('Error in handleSubmit:', err)
+      setError(err.message || 'Failed to create capsule. Please check the console for details.')
       setSubmitting(false)
     }
   }

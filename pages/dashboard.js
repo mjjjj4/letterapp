@@ -11,27 +11,43 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkUserAndFetchCapsules = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error) {
+          console.error('Auth error:', error)
+          router.push('/login')
+          return
+        }
+
+        if (!user) {
+          console.warn('No user found, redirecting to login')
+          router.push('/login')
+          return
+        }
+
+        console.log('User authenticated, fetching capsules for:', user.id)
+        setUser(user)
+
+        // Fetch user's capsules
+        const { data: capsuleData, error: capsuleError } = await supabase
+          .from('capsules')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (capsuleError) {
+          console.error('Error fetching capsules:', capsuleError)
+        } else {
+          console.log('Capsules fetched:', capsuleData)
+          setCapsules(capsuleData || [])
+        }
+
+        setLoading(false)
+      } catch (err) {
+        console.error('Error in checkUserAndFetchCapsules:', err)
         router.push('/login')
-        return
       }
-      setUser(user)
-
-      // Fetch user's capsules
-      const { data: capsuleData, error } = await supabase
-        .from('capsules')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching capsules:', error)
-      } else {
-        setCapsules(capsuleData || [])
-      }
-
-      setLoading(false)
     }
     checkUserAndFetchCapsules()
   }, [router])
