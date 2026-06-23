@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const router = useRouter()
-  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -13,7 +12,6 @@ export default function Home() {
       if (user) {
         router.push('/dashboard')
       } else {
-        setUser(null)
         setLoading(false)
       }
     }
