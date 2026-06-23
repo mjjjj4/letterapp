@@ -27,14 +27,37 @@ export default async function handler(req, res) {
 
   // Handle the event
   try {
+    console.log('=== Webhook Event Received ===')
+    console.log('Event type:', event.type)
+    console.log('Event ID:', event.id)
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object
 
-      const capsuleId = session.metadata.capsuleId
-      const userId = session.metadata.userId
+      console.log('=== Processing Checkout Session ===')
+      console.log('Session ID:', session.id)
+      console.log('Session metadata:', session.metadata)
+      console.log('Customer email:', session.customer_email)
+      console.log('Payment status:', session.payment_status)
+
+      const capsuleId = session.metadata?.capsuleId
+      const userId = session.metadata?.userId
       const userEmail = session.customer_email
 
-      console.log(`Processing payment for capsule ${capsuleId}`)
+      console.log('Extracted values:')
+      console.log('  capsuleId:', capsuleId)
+      console.log('  userId:', userId)
+      console.log('  userEmail:', userEmail)
+
+      if (!capsuleId) {
+        console.error('No capsuleId in metadata:', session.metadata)
+        return res.status(400).json({
+          error: 'Missing capsuleId in metadata',
+          metadata: session.metadata,
+        })
+      }
+
+      console.log(`Fetching capsule with ID: ${capsuleId}`)
 
       // Fetch the capsule
       const { data: capsule, error: fetchError } = await supabase
@@ -43,10 +66,32 @@ export default async function handler(req, res) {
         .eq('id', capsuleId)
         .single()
 
-      if (fetchError || !capsule) {
-        console.error('Capsule not found:', fetchError)
-        return res.status(404).json({ error: 'Capsule not found' })
+      console.log('Supabase fetch error:', fetchError)
+      console.log('Supabase capsule:', capsule)
+
+      if (fetchError) {
+        console.error('Error fetching capsule:', fetchError)
+        return res.status(404).json({
+          error: `Capsule not found: ${fetchError.message}`,
+          capsuleId: capsuleId,
+        })
       }
+
+      if (!capsule) {
+        console.error('Capsule is null, ID:', capsuleId)
+        return res.status(404).json({
+          error: 'Capsule not found',
+          capsuleId: capsuleId,
+        })
+      }
+
+      console.log('Capsule found:', {
+        id: capsule.id,
+        title: capsule.title,
+        status: capsule.status,
+      })
+
+      console.log('Updating capsule status to sealed...')
 
       // Update capsule status to "sealed"
       const { error: updateError } = await supabase
@@ -55,10 +100,17 @@ export default async function handler(req, res) {
         .eq('id', capsuleId)
         .eq('user_id', userId)
 
+      console.log('Update error:', updateError)
+
       if (updateError) {
         console.error('Error updating capsule:', updateError)
-        return res.status(500).json({ error: 'Failed to update capsule' })
+        return res.status(500).json({
+          error: `Failed to update capsule: ${updateError.message}`,
+          capsuleId: capsuleId,
+        })
       }
+
+      console.log('Capsule status updated successfully')
 
       // Send confirmation email via Resend
       try {
@@ -67,6 +119,8 @@ export default async function handler(req, res) {
           month: 'long',
           day: 'numeric',
         })
+
+        console.log('Sending confirmation email to:', userEmail)
 
         await resend.emails.send({
           from: 'The Letter <noreply@theletter.app>',
@@ -81,20 +135,26 @@ export default async function handler(req, res) {
             <p>— The Letter Team</p>
           `,
         })
-        console.log('Confirmation email sent to:', userEmail)
+        console.log('Confirmation email sent successfully')
       } catch (emailError) {
         console.error('Error sending email:', emailError)
         // Don't fail the webhook if email fails, just log it
       }
 
+      console.log('Webhook processing complete')
       return res.status(200).json({ received: true })
     }
 
     // Handle other events if needed
+    console.log('Unhandled event type:', event.type)
     return res.status(200).json({ received: true })
   } catch (err) {
-    console.error('Error processing webhook:', err)
-    return res.status(500).json({ error: err.message })
+    console.error('Error processing webhook:', err.message)
+    console.error('Full error:', err)
+    return res.status(500).json({
+      error: `Webhook error: ${err.message}`,
+      type: err.type,
+    })
   }
 }
 

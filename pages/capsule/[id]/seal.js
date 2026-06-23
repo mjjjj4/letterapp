@@ -14,16 +14,26 @@ export default function SealCapsule() {
   useEffect(() => {
     const checkUserAndFetchCapsule = async () => {
       try {
+        console.log('=== Seal Page Load ===')
+        console.log('Capsule ID from URL:', id)
+
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
+          console.log('No user found, redirecting to login')
           router.push('/login')
           return
         }
 
+        console.log('User authenticated:', user.id)
         setUser(user)
 
-        if (!id) return
+        if (!id) {
+          console.log('No ID in URL params yet')
+          return
+        }
+
+        console.log('Fetching capsule with ID:', id, 'for user:', user.id)
 
         // Fetch capsule
         const { data: capsuleData, error: capsuleError } = await supabase
@@ -33,20 +43,38 @@ export default function SealCapsule() {
           .eq('user_id', user.id)
           .single()
 
+        console.log('Supabase fetch error:', capsuleError)
+        console.log('Supabase capsule data:', capsuleData)
+
         if (capsuleError) {
-          setError('Capsule not found')
+          const errorMsg = `Capsule fetch error: ${capsuleError.message}`
+          console.error(errorMsg)
+          setError(errorMsg)
         } else if (capsuleData) {
+          console.log('Capsule loaded:', {
+            id: capsuleData.id,
+            title: capsuleData.title,
+            status: capsuleData.status,
+            user_id: capsuleData.user_id,
+          })
+
           if (capsuleData.status !== 'draft') {
-            setError('This capsule is no longer a draft and cannot be sealed')
+            const statusMsg = `This capsule is no longer a draft and cannot be sealed. Current status: ${capsuleData.status}`
+            console.error(statusMsg)
+            setError(statusMsg)
           } else {
+            console.log('Capsule is in draft status, ready to seal')
             setCapsule(capsuleData)
           }
+        } else {
+          console.error('Capsule data is null')
+          setError('Capsule not found')
         }
 
         setLoading(false)
       } catch (err) {
-        console.error('Error:', err)
-        setError('An error occurred')
+        console.error('Error in checkUserAndFetchCapsule:', err)
+        setError(`An error occurred: ${err.message}`)
         setLoading(false)
       }
     }
@@ -55,39 +83,64 @@ export default function SealCapsule() {
   }, [router, id])
 
   const handleSealPayment = async () => {
-    if (!capsule || !user) return
+    if (!capsule || !user) {
+      setError('Capsule or user information missing')
+      return
+    }
+
+    console.log('=== Starting Seal Payment ===')
+    console.log('Capsule ID:', capsule.id)
+    console.log('Capsule Title:', capsule.title)
+    console.log('User Email:', user.email)
+    console.log('Capsule Status:', capsule.status)
+    console.log('================================')
 
     setProcessing(true)
     setError('')
 
     try {
+      const payload = {
+        capsuleId: capsule.id,
+        userEmail: user.email,
+      }
+
+      console.log('Sending payload to /api/checkout-session:', JSON.stringify(payload))
+
       // Call the checkout session API
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          capsuleId: capsule.id,
-          userEmail: user.email,
-        }),
+        body: JSON.stringify(payload),
       })
+
+      console.log('Response status:', response.status)
 
       const data = await response.json()
 
+      console.log('Response data:', data)
+
       if (!response.ok) {
-        setError(data.error || 'Failed to create checkout session')
+        const errorMessage = data.error || data.message || 'Failed to create checkout session'
+        console.error('API Error:', errorMessage)
+        setError(errorMessage)
         setProcessing(false)
         return
       }
 
       // Redirect to Stripe checkout
       if (data.url) {
+        console.log('Redirecting to Stripe checkout URL:', data.url)
         window.location.href = data.url
+      } else {
+        console.error('No checkout URL returned')
+        setError('No checkout URL received from server')
+        setProcessing(false)
       }
     } catch (err) {
-      console.error('Error:', err)
-      setError(err.message || 'An error occurred')
+      console.error('Error in handleSealPayment:', err)
+      setError(err.message || 'An error occurred while processing your payment')
       setProcessing(false)
     }
   }
