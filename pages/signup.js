@@ -26,18 +26,40 @@ export default function Signup() {
 
     setLoading(true)
 
-    const { error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
 
-    if (signupError) {
-      setError(signupError.message)
+      if (signupError) {
+        setError(signupError.message)
+        setLoading(false)
+        return
+      }
+
+      // Create user record in custom users table
+      if (data.user) {
+        const { error: userError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+            }
+          ])
+
+        if (userError) {
+          console.warn('User record creation warning:', userError.message)
+          // Don't fail signup if user record creation fails, just warn
+        }
+      }
+
+      router.push('/login')
+    } catch (err) {
+      setError(err.message || 'An error occurred during signup')
       setLoading(false)
-      return
     }
-
-    router.push('/login')
   }
 
   return (
