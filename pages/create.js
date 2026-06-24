@@ -209,9 +209,18 @@ export default function CreateCapsule() {
                 onChange={handleInputChange}
                 placeholder="Give your capsule a title..."
                 style={styles.input}
+                maxLength={100}
                 required
                 disabled={submitting}
               />
+              <p style={{
+                fontSize: '12px',
+                color: formData.title.length >= 90 ? '#dc3545' : '#999',
+                textAlign: 'right',
+                margin: '4px 0 0 0',
+              }}>
+                {formData.title.length}/100 characters
+              </p>
             </div>
 
             <div style={styles.formGroup}>

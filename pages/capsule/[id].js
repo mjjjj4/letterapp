@@ -98,16 +98,7 @@ export default function CapsuleDetail() {
     }
   }
 
-  // Check if capsule is draft (case-insensitive and trim spaces)
-  const isDraft = capsule?.status?.toLowerCase?.()?.trim?.() === 'draft'
-
-  // Debug logging for status
-  if (capsule) {
-    console.log('Status comparison debug:')
-    console.log('  Raw status:', JSON.stringify(capsule.status))
-    console.log('  Lowercased:', JSON.stringify(capsule.status?.toLowerCase?.()))
-    console.log('  isDraft result:', isDraft)
-  }
+  const isDraft = capsule?.status === 'draft'
 
   if (loading) {
     return <div style={styles.loading}>Loading...</div>
@@ -157,58 +148,20 @@ export default function CapsuleDetail() {
       <div style={styles.content}>
         {/* Header */}
         <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>{capsule.title}</h1>
-            <div style={styles.metadata}>
-              <span
-                style={{
-                  ...styles.statusBadge,
-                  backgroundColor: getStatusColor(capsule.status),
-                }}
-              >
-                {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
-              </span>
-              <span style={styles.deliveryDate}>
-                Delivery: {formatDate(capsule.deliver_at)}
-              </span>
-            </div>
+          <h1 style={styles.title}>{capsule.title}</h1>
+          <div style={styles.metadata}>
+            <span
+              style={{
+                ...styles.statusBadge,
+                backgroundColor: getStatusColor(capsule.status),
+              }}
+            >
+              {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
+            </span>
+            <span style={styles.deliveryDate}>
+              Delivery: {formatDate(capsule.deliver_at)}
+            </span>
           </div>
-
-          {console.log('=== Button Render Check ==='),
-           console.log('isDraft value:', isDraft),
-           console.log('capsule.id:', capsule?.id),
-           console.log('About to render button section...'),
-           isDraft ? (
-            <>
-              {console.log('Rendering DRAFT button group')}
-              <div style={styles.buttonGroup}>
-                <button
-                  onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
-                  style={styles.editButton}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
-                  style={styles.sealButton}
-                >
-                  Seal & Pay
-                </button>
-              </div>
-            </>
-            ) : (
-              <>
-                {console.log('Rendering NON-DRAFT debug info')}
-                <div style={styles.debugInfo}>
-                  <p style={styles.debugText}>
-                    Status: {JSON.stringify(capsule.status)} (expected "draft")
-                  </p>
-                  <p style={styles.debugText}>
-                    isDraft check: {String(isDraft)}
-                  </p>
-                </div>
-              </>
-            )}
         </div>
 
         {/* Main Message */}
@@ -282,6 +235,24 @@ export default function CapsuleDetail() {
             Created on {formatDate(capsule.created_at)}
           </p>
         </div>
+
+        {/* Bottom action buttons */}
+        {isDraft && (
+          <div style={styles.bottomActions}>
+            <button
+              onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
+              style={styles.sealButtonBottom}
+            >
+              Seal & Pay — $19
+            </button>
+            <button
+              onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
+              style={styles.editButtonBottom}
+            >
+              Edit Capsule
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -317,24 +288,23 @@ const styles = {
   },
   content: {
     maxWidth: '900px',
-    margin: '40px auto',
-    padding: '0 20px',
+    margin: '20px auto',
+    padding: '0 16px',
   },
   header: {
     backgroundColor: 'white',
-    padding: '30px',
+    padding: '24px 20px',
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    marginBottom: '30px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '30px',
+    marginBottom: '20px',
   },
   title: {
-    fontSize: '36px',
+    fontSize: '28px',
     color: '#333',
-    margin: '0 0 15px 0',
+    margin: '0 0 12px 0',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    lineHeight: '1.3',
   },
   metadata: {
     display: 'flex',
@@ -353,30 +323,32 @@ const styles = {
     fontSize: '14px',
     color: '#666',
   },
-  buttonGroup: {
+  bottomActions: {
     display: 'flex',
-    gap: '10px',
     flexDirection: 'column',
-    minWidth: '150px',
+    gap: '12px',
+    marginBottom: '40px',
   },
-  editButton: {
-    padding: '12px 24px',
-    backgroundColor: '#17a2b8',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: 'bold',
-  },
-  sealButton: {
-    padding: '12px 24px',
+  sealButtonBottom: {
+    width: '100%',
+    padding: '18px',
     backgroundColor: '#007bff',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+  },
+  editButtonBottom: {
+    width: '100%',
+    padding: '14px',
+    backgroundColor: 'white',
+    color: '#333',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '15px',
     fontWeight: 'bold',
   },
   section: {
@@ -480,18 +452,5 @@ const styles = {
     fontSize: '18px',
     color: '#666',
     fontFamily: 'Arial, sans-serif',
-  },
-  debugInfo: {
-    padding: '15px',
-    backgroundColor: '#e7f3ff',
-    borderLeft: '4px solid #2196F3',
-    borderRadius: '4px',
-    marginTop: '10px',
-  },
-  debugText: {
-    fontSize: '13px',
-    color: '#1976D2',
-    margin: 0,
-    fontFamily: 'monospace',
   },
 }

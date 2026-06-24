@@ -168,6 +168,14 @@ export default function Dashboard() {
                   >
                     View Details
                   </button>
+                  {capsule.status === 'draft' && (
+                    <button
+                      onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
+                      style={styles.sealButton}
+                    >
+                      Seal & Pay
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -319,10 +327,24 @@ const styles = {
     borderTop: '1px solid #eee',
     display: 'flex',
     gap: '10px',
+    flexWrap: 'wrap',
   },
   viewButton: {
     flex: 1,
-    padding: '10px',
+    minWidth: '100px',
+    padding: '12px 10px',
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+  },
+  sealButton: {
+    flex: 1,
+    minWidth: '100px',
+    padding: '12px 10px',
     backgroundColor: '#007bff',
     color: 'white',
     border: 'none',
