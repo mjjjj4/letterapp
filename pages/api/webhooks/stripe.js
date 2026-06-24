@@ -29,11 +29,24 @@ function getRawBody(req) {
 }
 
 export default async function handler(req, res) {
-  console.log('=== Stripe Webhook Received ===')
+  // This fires first — if you don't see this in Vercel logs, Stripe isn't calling the endpoint
+  console.log('=== Stripe Webhook Hit ===', new Date().toISOString())
   console.log('Method:', req.method)
+  console.log('URL:', req.url)
 
   if (req.method !== 'POST') {
+    console.log('Non-POST request, returning 405')
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  // Check required env vars up front
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set in environment variables')
+    return res.status(500).json({ error: 'Webhook secret not configured' })
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables')
+    return res.status(500).json({ error: 'Supabase service role key not configured' })
   }
 
   // Read raw body for signature verification
