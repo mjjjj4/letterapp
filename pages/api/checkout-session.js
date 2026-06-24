@@ -99,7 +99,44 @@ export default async function handler(req, res) {
     }
 
     console.log('Creating Stripe checkout session...')
-    console.log('Base URL:', process.env.NEXT_PUBLIC_BASE_URL)
+
+    // Get and validate base URL
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    console.log('Raw NEXT_PUBLIC_BASE_URL:', baseUrl)
+
+    // Validate base URL is set
+    if (!baseUrl) {
+      console.error('NEXT_PUBLIC_BASE_URL environment variable is not set')
+      return res.status(500).json({
+        error: 'Server configuration error: NEXT_PUBLIC_BASE_URL is not set',
+        details: 'Contact support. Environment: ' + (process.env.NODE_ENV || 'unknown'),
+      })
+    }
+
+    // Ensure base URL has https:// scheme
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      console.warn('Base URL missing scheme, adding https://')
+      baseUrl = 'https://' + baseUrl
+    }
+
+    // Remove trailing slash if present
+    baseUrl = baseUrl.replace(/\/$/, '')
+
+    const successUrl = `${baseUrl}/capsule/${capsuleId}/success`
+    const cancelUrl = `${baseUrl}/capsule/${capsuleId}`
+
+    console.log('Stripe URLs:')
+    console.log('  Success URL:', successUrl)
+    console.log('  Cancel URL:', cancelUrl)
+
+    // Validate URLs have proper scheme
+    if (!successUrl.startsWith('https://') && !successUrl.startsWith('http://')) {
+      console.error('Success URL missing scheme:', successUrl)
+      return res.status(500).json({
+        error: 'Invalid success URL configuration',
+        successUrl: successUrl,
+      })
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -118,8 +155,8 @@ export default async function handler(req, res) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/capsule/${capsuleId}/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/capsule/${capsuleId}`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       customer_email: userEmail,
       metadata: {
         capsuleId: capsuleId,
