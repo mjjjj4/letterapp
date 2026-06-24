@@ -174,31 +174,42 @@ export default function CapsuleDetail() {
             </div>
           </div>
 
-          {isDraft ? (
-            <div style={styles.buttonGroup}>
-              <button
-                onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
-                style={styles.editButton}
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
-                style={styles.sealButton}
-              >
-                Seal & Pay
-              </button>
-            </div>
-          ) : (
-            <div style={styles.debugInfo}>
-              <p style={styles.debugText}>
-                Status: {JSON.stringify(capsule.status)} (expected "draft")
-              </p>
-              <p style={styles.debugText}>
-                isDraft check: {String(isDraft)}
-              </p>
-            </div>
-          )}
+          {console.log('=== Button Render Check ==='),
+           console.log('isDraft value:', isDraft),
+           console.log('capsule.id:', capsule?.id),
+           console.log('About to render button section...'),
+           isDraft ? (
+            <>
+              {console.log('Rendering DRAFT button group')}
+              <div style={styles.buttonGroup}>
+                <button
+                  onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
+                  style={styles.editButton}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
+                  style={styles.sealButton}
+                >
+                  Seal & Pay
+                </button>
+              </div>
+            </>
+              </>
+            ) : (
+              <>
+                {console.log('Rendering NON-DRAFT debug info')}
+                <div style={styles.debugInfo}>
+                  <p style={styles.debugText}>
+                    Status: {JSON.stringify(capsule.status)} (expected "draft")
+                  </p>
+                  <p style={styles.debugText}>
+                    isDraft check: {String(isDraft)}
+                  </p>
+                </div>
+              </>
+            )}
         </div>
 
         {/* Main Message */}
