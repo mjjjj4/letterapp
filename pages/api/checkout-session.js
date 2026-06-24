@@ -11,25 +11,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { capsuleId, userEmail } = req.body
+  const { capsuleId, userId, userEmail } = req.body
 
-  console.log('Request body:', { capsuleId, userEmail })
+  console.log('Request body:', { capsuleId, userId, userEmail })
 
   // Validate inputs
-  if (!capsuleId || !userEmail) {
-    const error = 'Missing capsuleId or userEmail'
+  if (!capsuleId || !userEmail || !userId) {
+    const error = 'Missing capsuleId, userId, or userEmail'
     console.error('Validation error:', error)
-    return res.status(400).json({ error, received: { capsuleId, userEmail } })
+    return res.status(400).json({ error, received: { capsuleId, userId, userEmail } })
   }
 
   try {
-    console.log('Fetching capsule with ID:', capsuleId)
+    console.log('Fetching capsule with ID:', capsuleId, 'for user:', userId)
 
-    // Verify the capsule exists
+    // Verify the capsule exists and belongs to the user
     const { data: capsuleArray, error: fetchError } = await supabase
       .from('capsules')
       .select('*')
       .eq('id', capsuleId)
+      .eq('user_id', userId)
 
     console.log('Supabase fetch error:', fetchError)
     console.log('Supabase response (array):', capsuleArray)
@@ -45,11 +46,24 @@ export default async function handler(req, res) {
     }
 
     if (!capsuleArray || capsuleArray.length === 0) {
-      console.error('Capsule not found for ID:', capsuleId)
+      console.error('Capsule not found for ID:', capsuleId, 'and user:', userId)
+
+      // Try to fetch without user_id to see if it's an RLS issue
+      const { data: allCapsules, error: allError } = await supabase
+        .from('capsules')
+        .select('id, user_id, title, status')
+        .eq('id', capsuleId)
+
+      console.log('Debug: Capsule lookup without user_id filter:')
+      console.log('  Error:', allError)
+      console.log('  Data:', allCapsules)
+
       return res.status(404).json({
-        error: `Capsule with ID "${capsuleId}" not found`,
+        error: `Capsule with ID "${capsuleId}" not found or you don't have access`,
         capsuleId: capsuleId,
+        userId: userId,
         found: false,
+        debugInfo: allCapsules ? 'Capsule exists but RLS may be blocking access' : 'Capsule does not exist',
       })
     }
 

@@ -102,10 +102,12 @@ export default function SealCapsule() {
     try {
       const payload = {
         capsuleId: capsule.id,
+        userId: user.id,
         userEmail: user.email,
       }
 
       console.log('Sending payload to /api/checkout-session:', JSON.stringify(payload))
+      console.log('User ID being sent:', user.id)
 
       // Call the checkout session API
       const response = await fetch('/api/checkout-session', {

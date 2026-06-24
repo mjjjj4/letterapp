@@ -98,7 +98,16 @@ export default function CapsuleDetail() {
     }
   }
 
-  const isDraft = capsule?.status === 'draft'
+  // Check if capsule is draft (case-insensitive and trim spaces)
+  const isDraft = capsule?.status?.toLowerCase?.()?.trim?.() === 'draft'
+
+  // Debug logging for status
+  if (capsule) {
+    console.log('Status comparison debug:')
+    console.log('  Raw status:', JSON.stringify(capsule.status))
+    console.log('  Lowercased:', JSON.stringify(capsule.status?.toLowerCase?.()))
+    console.log('  isDraft result:', isDraft)
+  }
 
   if (loading) {
     return <div style={styles.loading}>Loading...</div>
@@ -183,7 +192,10 @@ export default function CapsuleDetail() {
           ) : (
             <div style={styles.debugInfo}>
               <p style={styles.debugText}>
-                Status is "{capsule.status}" (not "draft"), so no edit/seal buttons are shown
+                Status: {JSON.stringify(capsule.status)} (expected "draft")
+              </p>
+              <p style={styles.debugText}>
+                isDraft check: {String(isDraft)}
               </p>
             </div>
           )}
