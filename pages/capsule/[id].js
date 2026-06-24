@@ -196,7 +196,6 @@ export default function CapsuleDetail() {
                 </button>
               </div>
             </>
-              </>
             ) : (
               <>
                 {console.log('Rendering NON-DRAFT debug info')}
