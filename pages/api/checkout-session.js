@@ -101,14 +101,14 @@ export default async function handler(req, res) {
     console.log('Creating Stripe checkout session...')
 
     // Get and validate base URL
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    console.log('Raw NEXT_PUBLIC_BASE_URL:', baseUrl)
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    console.log('Raw NEXT_PUBLIC_APP_URL:', baseUrl)
 
     // Validate base URL is set
     if (!baseUrl) {
-      console.error('NEXT_PUBLIC_BASE_URL environment variable is not set')
+      console.error('NEXT_PUBLIC_APP_URL environment variable is not set')
       return res.status(500).json({
-        error: 'Server configuration error: NEXT_PUBLIC_BASE_URL is not set',
+        error: 'Server configuration error: NEXT_PUBLIC_APP_URL is not set',
         details: 'Contact support. Environment: ' + (process.env.NODE_ENV || 'unknown'),
       })
     }

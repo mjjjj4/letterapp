@@ -93,12 +93,12 @@ STRIPE_WEBHOOK_SECRET=whsec_test_...
 RESEND_API_KEY=re_...
 
 # Application
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 For Vercel production:
 ```
-NEXT_PUBLIC_BASE_URL=https://your-vercel-app.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-vercel-app.vercel.app
 ```
 
 ---
