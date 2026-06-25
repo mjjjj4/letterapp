@@ -1,7 +1,13 @@
 import Stripe from 'stripe'
-import { supabase } from '../../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+
+// Service role client — bypasses RLS, required for server-side queries
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
 
 export default async function handler(req, res) {
   console.log('=== Checkout Session API ===')
@@ -25,8 +31,11 @@ export default async function handler(req, res) {
   try {
     console.log('Fetching capsule with ID:', capsuleId, 'for user:', userId)
 
-    // Verify the capsule exists and belongs to the user
-    const { data: capsuleArray, error: fetchError } = await supabase
+    // Verify the capsule exists and belongs to the user (admin client bypasses RLS)
+    console.log('Querying capsule — capsuleId:', capsuleId, '| userId filter:', userId)
+    console.log('Using service role key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+
+    const { data: capsuleArray, error: fetchError } = await supabaseAdmin
       .from('capsules')
       .select('*')
       .eq('id', capsuleId)
@@ -46,24 +55,27 @@ export default async function handler(req, res) {
     }
 
     if (!capsuleArray || capsuleArray.length === 0) {
-      console.error('Capsule not found for ID:', capsuleId, 'and user:', userId)
+      console.error('Capsule not found — capsuleId:', capsuleId, '| userId:', userId)
 
-      // Try to fetch without user_id to see if it's an RLS issue
-      const { data: allCapsules, error: allError } = await supabase
+      // Debug: check if capsule exists at all (no user_id filter) to distinguish "wrong user" vs "missing"
+      const { data: anyMatch, error: anyError } = await supabaseAdmin
         .from('capsules')
         .select('id, user_id, title, status')
         .eq('id', capsuleId)
 
-      console.log('Debug: Capsule lookup without user_id filter:')
-      console.log('  Error:', allError)
-      console.log('  Data:', allCapsules)
+      console.log('Debug lookup (no user filter) — error:', anyError, '| data:', anyMatch)
+
+      const debugInfo = anyMatch && anyMatch.length > 0
+        ? `Capsule exists but user_id mismatch — capsule.user_id: ${anyMatch[0].user_id} | requested userId: ${userId}`
+        : 'Capsule does not exist in database at all'
+
+      console.error('Debug info:', debugInfo)
 
       return res.status(404).json({
         error: `Capsule with ID "${capsuleId}" not found or you don't have access`,
-        capsuleId: capsuleId,
-        userId: userId,
-        found: false,
-        debugInfo: allCapsules ? 'Capsule exists but RLS may be blocking access' : 'Capsule does not exist',
+        capsuleId,
+        userId,
+        debugInfo,
       })
     }
 
