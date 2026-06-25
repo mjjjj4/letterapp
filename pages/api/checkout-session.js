@@ -138,6 +138,17 @@ export default async function handler(req, res) {
       })
     }
 
+    // Calculate price: $1.85 per year between today and deliver_at (minimum 1 year)
+    const today = new Date()
+    const deliverDate = new Date(capsule.deliver_at)
+    const msPerYear = 1000 * 60 * 60 * 24 * 365.25
+    const years = Math.max(1, Math.ceil((deliverDate - today) / msPerYear))
+    const pricePerYear = 1.85
+    const totalDollars = +(years * pricePerYear).toFixed(2)
+    const unitAmount = Math.round(totalDollars * 100) // Stripe expects cents
+
+    console.log(`Pricing: ${years} year(s) × $${pricePerYear} = $${totalDollars} (${unitAmount} cents)`)
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -147,9 +158,9 @@ export default async function handler(req, res) {
             currency: 'usd',
             product_data: {
               name: `Seal Capsule: "${capsule.title}"`,
-              description: `Seal and preserve your time capsule. It will be delivered on ${new Date(capsule.deliver_at).toLocaleDateString()}.`,
+              description: `${years} year${years !== 1 ? 's' : ''} × $${pricePerYear}/year — delivered ${new Date(capsule.deliver_at).toLocaleDateString()}.`,
             },
-            unit_amount: 1900, // $19.00 in cents
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },

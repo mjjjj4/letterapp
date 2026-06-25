@@ -216,14 +216,6 @@ export default function SealCapsule() {
             </p>
           </div>
 
-          <div style={styles.pricingBox}>
-            <p style={styles.pricingLabel}>One-time sealing fee:</p>
-            <p style={styles.price}>$19.00</p>
-            <p style={styles.pricingDescription}>
-              Seal your capsule and receive a confirmation email. Your capsule will be preserved until the delivery date.
-            </p>
-          </div>
-
           <div style={styles.benefitsBox}>
             <h3 style={styles.benefitsTitle}>When you seal:</h3>
             <ul style={styles.benefitsList}>

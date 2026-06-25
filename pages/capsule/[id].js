@@ -243,7 +243,7 @@ export default function CapsuleDetail() {
               onClick={() => router.push(`/capsule/${capsule.id}/seal`)}
               style={styles.sealButtonBottom}
             >
-              Seal & Pay — $19
+              Seal & Pay
             </button>
             <button
               onClick={() => router.push(`/capsule/${capsule.id}/edit`)}
