@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import { calcPrice, describeTime, getMinDate, loadCart, saveCart } from '../../lib/cart'
+import { calcPrice, loadCart, saveCart } from '../../lib/cart'
 
 export default function CapsuleDetail() {
   const router = useRouter()
@@ -11,8 +11,6 @@ export default function CapsuleDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cart, setCart] = useState([])
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState('')
 
   useEffect(() => {
     const init = async () => {
@@ -57,119 +55,62 @@ export default function CapsuleDetail() {
     return '#6c757d'
   }
 
-  const openModal = () => {
-    const minDate = getMinDate()
-    const existing = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
-    setSelectedDate(existing >= minDate ? existing : '')
-    setModalOpen(true)
-  }
-
-  const closeModal = () => { setModalOpen(false); setSelectedDate('') }
-
+  // Add to cart directly (no modal) then navigate to cart
   const addToCart = () => {
-    const pricing = calcPrice(selectedDate)
-    if (!pricing || !capsule) return
+    if (!capsule) return
+    const existingDate = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
+    const pricing = calcPrice(existingDate)
     setCart(prev => {
       const filtered = prev.filter(x => x.capsuleId !== capsule.id)
       return [...filtered, {
         capsuleId: capsule.id,
         title: capsule.title,
-        deliveryDate: selectedDate,
-        years: pricing.years,
-        price: pricing.price,
+        deliveryDate: pricing ? existingDate : '',
+        years: pricing ? pricing.years : null,
+        price: pricing ? pricing.price : null,
       }]
     })
-    closeModal()
     router.push('/cart')
   }
 
   const inCart = capsule && cart.some(x => x.capsuleId === capsule.id)
-  const pricing = calcPrice(selectedDate)
   const isDraft = capsule?.status === 'draft'
+
+  const navRight = (
+    <div style={st.navRight}>
+      <button
+        onClick={() => router.push('/cart')}
+        style={cart.length > 0 ? st.cartBtnActive : st.cartBtnEmpty}
+      >
+        {cart.length > 0 ? `Cart (${cart.length})` : 'Cart'}
+      </button>
+      <button onClick={() => router.push('/dashboard')} style={st.backButton}>
+        ← Dashboard
+      </button>
+    </div>
+  )
 
   if (loading) return <div style={st.loading}>Loading...</div>
 
   if (error) return (
     <div style={st.container}>
-      <div style={st.navbar}>
-        <h1 style={st.navTitle}>The Letter</h1>
-        <button onClick={() => router.push('/dashboard')} style={st.backButton}>← Back</button>
-      </div>
+      <div style={st.navbar}><h1 style={st.navTitle}>The Letter</h1>{navRight}</div>
       <div style={st.content}><div style={st.error}>{error}</div></div>
     </div>
   )
 
   if (!capsule) return (
     <div style={st.container}>
-      <div style={st.navbar}>
-        <h1 style={st.navTitle}>The Letter</h1>
-        <button onClick={() => router.push('/dashboard')} style={st.backButton}>← Back</button>
-      </div>
+      <div style={st.navbar}><h1 style={st.navTitle}>The Letter</h1>{navRight}</div>
       <div style={st.content}><p style={st.errorText}>Capsule not found</p></div>
     </div>
   )
 
   return (
     <div style={st.container}>
-
-      {/* DATE SELECTION MODAL */}
-      {modalOpen && (
-        <div style={st.backdrop} onClick={closeModal}>
-          <div style={st.modal} onClick={e => e.stopPropagation()}>
-            <p style={st.modalLabel}>Schedule delivery</p>
-            <p style={st.modalCapsuleName}>&ldquo;{capsule.title}&rdquo;</p>
-
-            <label style={st.fieldLabel}>When should this capsule be delivered?</label>
-            <input
-              type="date"
-              min={getMinDate()}
-              value={selectedDate}
-              onChange={e => setSelectedDate(e.target.value)}
-              style={st.dateInput}
-            />
-
-            {pricing && selectedDate && (
-              <div style={st.priceBreakdown}>
-                <div style={st.priceRow}>
-                  <span style={st.priceLabel}>Delivery date</span>
-                  <span style={st.priceValue}>{formatDate(selectedDate)}</span>
-                </div>
-                <div style={st.priceRow}>
-                  <span style={st.priceLabel}>Storage period</span>
-                  <span style={st.priceValue}>{describeTime(selectedDate)}</span>
-                </div>
-                <div style={st.priceRow}>
-                  <span style={st.priceLabel}>Rate</span>
-                  <span style={st.priceValue}>$1.85/year</span>
-                </div>
-                <div style={{ ...st.priceRow, borderTop: '1px solid #e8e8e8', paddingTop: '12px', marginTop: '4px' }}>
-                  <span style={{ ...st.priceLabel, fontWeight: 'bold', color: '#1a1a1a' }}>Total</span>
-                  <span style={st.priceTotal}>${pricing.price.toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-
-            {!selectedDate && (
-              <p style={st.dateHint}>Select a date to see pricing</p>
-            )}
-
-            <button
-              onClick={addToCart}
-              disabled={!pricing}
-              style={{ ...st.addToCartBtn, opacity: pricing ? 1 : 0.45, cursor: pricing ? 'pointer' : 'not-allowed' }}
-            >
-              Add to cart &rarr;
-            </button>
-            <button onClick={closeModal} style={st.cancelBtn}>Cancel</button>
-          </div>
-        </div>
-      )}
-
       <div style={st.navbar}>
         <h1 style={st.navTitle}>The Letter</h1>
-        <button onClick={() => router.push('/dashboard')} style={st.backButton}>
-          ← Back to Dashboard
-        </button>
+        {navRight}
       </div>
 
       <div style={st.content}>
@@ -184,7 +125,7 @@ export default function CapsuleDetail() {
           </div>
         </div>
 
-        {/* Main Message */}
+        {/* Message */}
         <div style={st.section}>
           <h2 style={st.sectionTitle}>Your Message</h2>
           <div style={st.messageBox}>
@@ -192,7 +133,7 @@ export default function CapsuleDetail() {
           </div>
         </div>
 
-        {/* Snapshot Data */}
+        {/* Snapshot */}
         {(capsule.age || capsule.city || capsule.favorite_song || capsule.favorite_show ||
           capsule.future_vision || (capsule.personality_words && capsule.personality_words.length > 0)) && (
           <div style={st.section}>
@@ -219,7 +160,7 @@ export default function CapsuleDetail() {
           <p style={st.createdDate}>Created on {formatDate(capsule.created_at)}</p>
         </div>
 
-        {/* Bottom actions — draft only */}
+        {/* Actions — draft only */}
         {isDraft && (
           <div style={st.bottomActions}>
             {inCart ? (
@@ -227,7 +168,7 @@ export default function CapsuleDetail() {
                 In cart — View cart &rarr;
               </button>
             ) : (
-              <button onClick={openModal} style={st.sealButtonBottom}>
+              <button onClick={addToCart} style={st.sealButtonBottom}>
                 Seal &amp; Pay
               </button>
             )}
@@ -244,37 +185,23 @@ export default function CapsuleDetail() {
 const st = {
   container: { minHeight: '100vh', backgroundColor: '#f5f5f5', fontFamily: 'Arial, sans-serif' },
   loading: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#666', fontFamily: 'Arial, sans-serif' },
-
-  // Modal
-  backdrop: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' },
-  modal: { backgroundColor: '#fff', borderRadius: '16px', padding: '28px 24px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' },
-  modalLabel: { fontSize: '12px', fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 6px', fontFamily: 'Arial,sans-serif' },
-  modalCapsuleName: { fontSize: '17px', fontWeight: 'bold', color: '#1a1a1a', margin: '0 0 20px', lineHeight: '1.4', wordBreak: 'break-word' },
-  fieldLabel: { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#555', marginBottom: '8px', fontFamily: 'Arial,sans-serif' },
-  dateInput: { width: '100%', padding: '12px', border: '1.5px solid #ddd', borderRadius: '8px', fontSize: '15px', fontFamily: 'Arial,sans-serif', boxSizing: 'border-box', marginBottom: '16px' },
-  priceBreakdown: { backgroundColor: '#f9f9f7', borderRadius: '10px', padding: '16px', marginBottom: '20px' },
-  priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '8px', marginBottom: '8px' },
-  priceLabel: { fontSize: '13px', color: '#777', fontFamily: 'Arial,sans-serif' },
-  priceValue: { fontSize: '13px', color: '#333', fontFamily: 'Arial,sans-serif', fontWeight: 'bold' },
-  priceTotal: { fontSize: '22px', fontWeight: 'bold', color: '#1a1a1a' },
-  dateHint: { fontSize: '13px', color: '#aaa', fontFamily: 'Arial,sans-serif', textAlign: 'center', margin: '0 0 20px' },
-  addToCartBtn: { width: '100%', padding: '14px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', marginBottom: '10px', fontFamily: 'Arial,sans-serif' },
-  cancelBtn: { width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#888', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-
-  navbar: { backgroundColor: 'white', padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  navTitle: { fontSize: '28px', margin: 0, color: '#333' },
-  backButton: { padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' },
+  navbar: { backgroundColor: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  navTitle: { fontSize: '24px', margin: 0, color: '#333', fontWeight: 'bold' },
+  navRight: { display: 'flex', alignItems: 'center', gap: '10px' },
+  cartBtnActive: { padding: '8px 16px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
+  cartBtnEmpty: { padding: '8px 16px', backgroundColor: 'transparent', color: '#888', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
+  backButton: { padding: '8px 16px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
   content: { maxWidth: '900px', margin: '20px auto', padding: '0 16px' },
   header: { backgroundColor: 'white', padding: '24px 20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '20px' },
-  title: { fontSize: '28px', color: '#333', margin: '0 0 12px 0', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' },
-  metadata: { display: 'flex', gap: '15px', alignItems: 'center' },
-  statusBadge: { padding: '6px 16px', borderRadius: '20px', color: 'white', fontSize: '12px', fontWeight: 'bold', display: 'inline-block' },
+  title: { fontSize: '28px', color: '#333', margin: '0 0 12px 0', wordBreak: 'break-word', lineHeight: '1.3' },
+  metadata: { display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' },
+  statusBadge: { padding: '6px 16px', borderRadius: '20px', color: 'white', fontSize: '12px', fontWeight: 'bold' },
   deliveryDate: { fontSize: '14px', color: '#666' },
   bottomActions: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '40px' },
   sealButtonBottom: { width: '100%', padding: '18px', backgroundColor: '#1a1a1a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold' },
   viewCartBtn: { width: '100%', padding: '18px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' },
   editButtonBottom: { width: '100%', padding: '14px', backgroundColor: 'white', color: '#333', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold' },
-  section: { backgroundColor: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '30px' },
+  section: { backgroundColor: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '20px' },
   sectionTitle: { fontSize: '20px', fontWeight: 'bold', color: '#333', marginTop: 0, marginBottom: '20px' },
   messageBox: { padding: '20px', backgroundColor: '#f9f9f9', borderLeft: '4px solid #007bff', borderRadius: '4px' },
   messageText: { fontSize: '16px', color: '#333', lineHeight: '1.8', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
@@ -282,7 +209,7 @@ const st = {
   snapshotItem: { padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '4px', borderLeft: '4px solid #28a745' },
   snapshotLabel: { fontSize: '12px', fontWeight: 'bold', color: '#666', margin: '0 0 8px 0', textTransform: 'uppercase' },
   snapshotValue: { fontSize: '16px', color: '#333', margin: 0, fontWeight: 'bold' },
-  futureVisionBox: { marginTop: '30px', padding: '20px', backgroundColor: '#f0f7ff', borderRadius: '4px', borderLeft: '4px solid #007bff' },
+  futureVisionBox: { marginTop: '20px', padding: '20px', backgroundColor: '#f0f7ff', borderRadius: '4px', borderLeft: '4px solid #007bff' },
   futureVisionTitle: { fontSize: '14px', fontWeight: 'bold', color: '#0056b3', margin: '0 0 10px 0' },
   futureVisionText: { fontSize: '16px', color: '#333', lineHeight: '1.8', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
   createdDate: { fontSize: '12px', color: '#999', textAlign: 'center', margin: 0 },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
+import { loadCart } from '../lib/cart'
 
 export default function CreateCapsule() {
   const router = useRouter()
@@ -9,6 +10,7 @@ export default function CreateCapsule() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [cartCount, setCartCount] = useState(0)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -51,6 +53,8 @@ export default function CreateCapsule() {
     }
     checkUser()
   }, [router])
+
+  useEffect(() => { setCartCount(loadCart().length) }, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -185,9 +189,17 @@ export default function CreateCapsule() {
     <div style={styles.container}>
       <div style={styles.navbar}>
         <h1 style={styles.navTitle}>The Letter</h1>
-        <button onClick={() => router.push('/dashboard')} style={styles.backButton}>
-          ← Back to Dashboard
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={() => router.push('/cart')}
+            style={cartCount > 0 ? styles.cartBtnActive : styles.cartBtnEmpty}
+          >
+            {cartCount > 0 ? `Cart (${cartCount})` : 'Cart'}
+          </button>
+          <button onClick={() => router.push('/dashboard')} style={styles.backButton}>
+            ← Dashboard
+          </button>
+        </div>
       </div>
 
       <div style={styles.formContainer}>
@@ -394,6 +406,25 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
+  },
+  cartBtnActive: {
+    padding: '8px 16px',
+    backgroundColor: '#f59e0b',
+    color: '#1a1a1a',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  cartBtnEmpty: {
+    padding: '8px 16px',
+    backgroundColor: 'transparent',
+    color: '#888',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    fontSize: '13px',
+    cursor: 'pointer',
   },
   formContainer: {
     maxWidth: '800px',
