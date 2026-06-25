@@ -22,21 +22,29 @@ export default function Cart() {
     init()
   }, [router])
 
-  useEffect(() => { saveCart(cart) }, [cart])
-
-  const removeItem = (capsuleId) => setCart(prev => prev.filter(x => x.capsuleId !== capsuleId))
+  const removeItem = (capsuleId) => {
+    setCart(prev => {
+      const updated = prev.filter(x => x.capsuleId !== capsuleId)
+      saveCart(updated)
+      return updated
+    })
+  }
 
   const updateDate = (capsuleId, dateStr) => {
     const pricing = calcPrice(dateStr)
-    setCart(prev => prev.map(item => {
-      if (item.capsuleId !== capsuleId) return item
-      return {
-        ...item,
-        deliveryDate: dateStr,
-        years: pricing ? pricing.years : null,
-        price: pricing ? pricing.price : null,
-      }
-    }))
+    setCart(prev => {
+      const updated = prev.map(item => {
+        if (item.capsuleId !== capsuleId) return item
+        return {
+          ...item,
+          deliveryDate: dateStr,
+          years: pricing ? pricing.years : null,
+          price: pricing ? pricing.price : null,
+        }
+      })
+      saveCart(updated)
+      return updated
+    })
   }
 
   const allDatesSet = cart.length > 0 && cart.every(item => item.deliveryDate && item.price)

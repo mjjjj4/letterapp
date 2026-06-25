@@ -33,7 +33,6 @@ export default function Dashboard() {
   }, [router])
 
   useEffect(() => { setCart(loadCart()) }, [])
-  useEffect(() => { saveCart(cart) }, [cart])
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -44,20 +43,17 @@ export default function Dashboard() {
   const formatDate = (ds) =>
     new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  // Save to localStorage synchronously before navigating so cart page sees the item immediately
   const addToCart = (capsule) => {
-    const existingDate = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
-    const pricing = calcPrice(existingDate)
     const newItem = {
       capsuleId: capsule.id,
       title: capsule.title,
-      deliveryDate: pricing ? existingDate : '',
-      years: pricing ? pricing.years : null,
-      price: pricing ? pricing.price : null,
+      deliveryDate: '',
+      years: null,
+      price: null,
     }
     const currentCart = loadCart()
     const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
-    saveCart(newCart)   // synchronous — localStorage is updated before push
+    saveCart(newCart)
     setCart(newCart)
     router.push('/cart')
   }

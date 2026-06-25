@@ -15,7 +15,6 @@ export default function CreateCapsule() {
   const [formData, setFormData] = useState({
     title: '',
     message: '',
-    deliver_at: '',
     age: '',
     city: '',
     favorite_song: '',
@@ -109,9 +108,8 @@ export default function CreateCapsule() {
     setError('')
     setSubmitting(true)
 
-    // Validate form fields
-    if (!formData.title || !formData.message || !formData.deliver_at) {
-      setError('Title, message, and delivery date are required')
+    if (!formData.title || !formData.message) {
+      setError('Title and message are required')
       setSubmitting(false)
       return
     }
@@ -136,7 +134,7 @@ export default function CreateCapsule() {
         user_id: user.id,
         title: formData.title,
         message: formData.message,
-        deliver_at: formData.deliver_at,
+        deliver_at: '2099-12-31',
         status: 'draft',
         age: formData.age ? parseInt(formData.age) : null,
         city: formData.city || null,
@@ -243,19 +241,6 @@ export default function CreateCapsule() {
                 onChange={handleInputChange}
                 placeholder="Write your message to your future self..."
                 style={{...styles.input, ...styles.textarea, minHeight: '200px'}}
-                required
-                disabled={submitting}
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Delivery Date *</label>
-              <input
-                type="date"
-                name="deliver_at"
-                value={formData.deliver_at}
-                onChange={handleInputChange}
-                style={styles.input}
                 required
                 disabled={submitting}
               />

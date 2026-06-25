@@ -43,7 +43,6 @@ export default function CapsuleDetail() {
   }, [router, id])
 
   useEffect(() => { setCart(loadCart()) }, [])
-  useEffect(() => { saveCart(cart) }, [cart])
 
   const formatDate = (ds) =>
     new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -55,21 +54,18 @@ export default function CapsuleDetail() {
     return '#6c757d'
   }
 
-  // Save to localStorage synchronously before navigating so cart page sees the item immediately
   const addToCart = () => {
     if (!capsule) return
-    const existingDate = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
-    const pricing = calcPrice(existingDate)
     const newItem = {
       capsuleId: capsule.id,
       title: capsule.title,
-      deliveryDate: pricing ? existingDate : '',
-      years: pricing ? pricing.years : null,
-      price: pricing ? pricing.price : null,
+      deliveryDate: '',
+      years: null,
+      price: null,
     }
     const currentCart = loadCart()
     const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
-    saveCart(newCart)   // synchronous — localStorage updated before push
+    saveCart(newCart)
     setCart(newCart)
     router.push('/cart')
   }
@@ -122,7 +118,9 @@ export default function CapsuleDetail() {
             <span style={{ ...st.statusBadge, backgroundColor: getStatusColor(capsule.status) }}>
               {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
             </span>
-            <span style={st.deliveryDate}>Delivery: {formatDate(capsule.deliver_at)}</span>
+            {capsule.status !== 'draft' && capsule.deliver_at && (
+              <span style={st.deliveryDate}>Delivery: {formatDate(capsule.deliver_at)}</span>
+            )}
           </div>
         </div>
 
