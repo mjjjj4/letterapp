@@ -92,7 +92,7 @@ export default function Cart() {
   return (
     <div style={cs.page}>
       <nav style={cs.nav}>
-        <span style={cs.navBrand}>The Letter</span>
+        <span style={cs.navBrand} onClick={() => router.push('/dashboard')}>The Letter</span>
         <button onClick={() => router.push('/dashboard')} style={cs.backBtn}>
           ← Dashboard
         </button>
@@ -244,7 +244,7 @@ const cs = {
   loadingText: { fontSize: '16px', color: '#888', fontFamily: 'Arial,sans-serif' },
 
   nav: { backgroundColor: '#1a1a1a', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  navBrand: { fontSize: '20px', fontWeight: 'bold', color: '#fff', letterSpacing: '0.5px' },
+  navBrand: { fontSize: '20px', fontWeight: 'bold', color: '#fff', letterSpacing: '0.5px', cursor: 'pointer' },
   backBtn: { padding: '8px 16px', backgroundColor: 'transparent', color: '#aaa', border: '1px solid #444', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
 
   body: { maxWidth: '600px', margin: '0 auto', padding: '32px 16px 60px' },
