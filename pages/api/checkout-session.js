@@ -3,203 +3,139 @@ import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
-// Service role client — bypasses RLS, required for server-side queries
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+const PRICE_PER_YEAR = 1.85
+
+function serverCalcPrice(deliveryDate) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const deliver = new Date(deliveryDate)
+  deliver.setHours(0, 0, 0, 0)
+  const ms = deliver - today
+  if (ms <= 0) return null
+  const years = Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24 * 365.25)))
+  return { years, price: +(years * PRICE_PER_YEAR).toFixed(2) }
+}
+
 export default async function handler(req, res) {
-  console.log('=== Checkout Session API ===')
-  console.log('Method:', req.method)
+  console.log('=== Checkout Session API ===', new Date().toISOString())
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+  const { cartItems, userId, userEmail } = req.body
+
+  if (!Array.isArray(cartItems) || cartItems.length === 0) {
+    return res.status(400).json({ error: 'cartItems must be a non-empty array' })
+  }
+  if (!userId || !userEmail) {
+    return res.status(400).json({ error: 'Missing userId or userEmail' })
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).json({ error: 'Server configuration error: SUPABASE_SERVICE_ROLE_KEY not set' })
   }
 
-  const { capsuleId, userId, userEmail } = req.body
-
-  console.log('Request body:', { capsuleId, userId, userEmail })
-
-  // Validate inputs
-  if (!capsuleId || !userEmail || !userId) {
-    const error = 'Missing capsuleId, userId, or userEmail'
-    console.error('Validation error:', error)
-    return res.status(400).json({ error, received: { capsuleId, userId, userEmail } })
-  }
+  console.log('Cart items:', cartItems.length, '| userId:', userId)
 
   try {
-    console.log('Fetching capsule with ID:', capsuleId, 'for user:', userId)
+    // Validate each capsule and recalculate prices server-side
+    let runningTotal = 0
+    const validatedItems = []
 
-    // Verify the capsule exists and belongs to the user (admin client bypasses RLS)
-    console.log('Querying capsule — capsuleId:', capsuleId, '| userId filter:', userId)
-    console.log('Using service role key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+    for (const item of cartItems) {
+      const { capsuleId, deliveryDate } = item
 
-    const { data: capsuleArray, error: fetchError } = await supabaseAdmin
-      .from('capsules')
-      .select('*')
-      .eq('id', capsuleId)
-      .eq('user_id', userId)
+      if (!capsuleId || !deliveryDate) {
+        return res.status(400).json({ error: 'Each cart item needs capsuleId and deliveryDate' })
+      }
 
-    console.log('Supabase fetch error:', fetchError)
-    console.log('Supabase response (array):', capsuleArray)
-    console.log('Response length:', capsuleArray?.length)
-
-    if (fetchError) {
-      console.error('Supabase error details:', fetchError)
-      return res.status(404).json({
-        error: `Failed to fetch capsule: ${fetchError.message}`,
-        supabaseError: fetchError,
-        capsuleId: capsuleId,
-      })
-    }
-
-    if (!capsuleArray || capsuleArray.length === 0) {
-      console.error('Capsule not found — capsuleId:', capsuleId, '| userId:', userId)
-
-      // Debug: check if capsule exists at all (no user_id filter) to distinguish "wrong user" vs "missing"
-      const { data: anyMatch, error: anyError } = await supabaseAdmin
+      // Verify capsule exists, belongs to user, and is still a draft
+      const { data, error } = await supabaseAdmin
         .from('capsules')
-        .select('id, user_id, title, status')
+        .select('id, title, status, user_id')
         .eq('id', capsuleId)
+        .eq('user_id', userId)
 
-      console.log('Debug lookup (no user filter) — error:', anyError, '| data:', anyMatch)
+      if (error) {
+        console.error('Supabase error for capsule', capsuleId, error.message)
+        return res.status(500).json({ error: `Database error: ${error.message}` })
+      }
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: `Capsule "${capsuleId}" not found or access denied` })
+      }
+      if (data[0].status !== 'draft') {
+        return res.status(400).json({ error: `Capsule "${data[0].title}" is no longer a draft (status: ${data[0].status})` })
+      }
 
-      const debugInfo = anyMatch && anyMatch.length > 0
-        ? `Capsule exists but user_id mismatch — capsule.user_id: ${anyMatch[0].user_id} | requested userId: ${userId}`
-        : 'Capsule does not exist in database at all'
+      // Recalculate server-side to prevent price spoofing
+      const pricing = serverCalcPrice(deliveryDate)
+      if (!pricing) {
+        return res.status(400).json({ error: `Delivery date "${deliveryDate}" for "${data[0].title}" must be in the future` })
+      }
 
-      console.error('Debug info:', debugInfo)
-
-      return res.status(404).json({
-        error: `Capsule with ID "${capsuleId}" not found or you don't have access`,
+      runningTotal += pricing.price
+      validatedItems.push({
         capsuleId,
-        userId,
-        debugInfo,
+        title: data[0].title,
+        deliveryDate,
+        years: pricing.years,
+        price: pricing.price,
       })
+
+      console.log(`  Capsule: "${data[0].title}" | ${pricing.years}yr | $${pricing.price}`)
     }
 
-    if (capsuleArray.length > 1) {
-      console.error('Multiple capsules found for ID:', capsuleId)
-      return res.status(500).json({
-        error: 'Database error: multiple capsules with same ID',
-        capsuleId: capsuleId,
-      })
-    }
+    const total = +runningTotal.toFixed(2)
+    const unitAmount = Math.round(total * 100)
 
-    const capsule = capsuleArray[0]
+    console.log('Total:', total, '| unit amount (cents):', unitAmount)
 
-    console.log('Capsule fetched successfully:', {
-      id: capsule.id,
-      title: capsule.title,
-      status: capsule.status,
-      userId: capsule.user_id,
-    })
-
-    console.log('Capsule found:', {
-      id: capsule.id,
-      title: capsule.title,
-      status: capsule.status,
-      userId: capsule.user_id,
-    })
-
-    if (capsule.status !== 'draft') {
-      console.error('Capsule is not in draft status:', capsule.status)
-      return res.status(400).json({
-        error: `Only draft capsules can be sealed. Current status: ${capsule.status}`,
-      })
-    }
-
-    console.log('Creating Stripe checkout session...')
-
-    // Get and validate base URL
-    let baseUrl = process.env.NEXT_PUBLIC_APP_URL
-    console.log('Raw NEXT_PUBLIC_APP_URL:', baseUrl)
-
-    // Validate base URL is set
-    if (!baseUrl) {
-      console.error('NEXT_PUBLIC_APP_URL environment variable is not set')
-      return res.status(500).json({
-        error: 'Server configuration error: NEXT_PUBLIC_APP_URL is not set',
-        details: 'Contact support. Environment: ' + (process.env.NODE_ENV || 'unknown'),
-      })
-    }
-
-    // Ensure base URL has https:// scheme
-    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-      console.warn('Base URL missing scheme, adding https://')
-      baseUrl = 'https://' + baseUrl
-    }
-
-    // Remove trailing slash if present
+    // Build base URL
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+    if (!baseUrl.startsWith('http')) baseUrl = 'https://' + baseUrl
     baseUrl = baseUrl.replace(/\/$/, '')
 
-    const successUrl = `${baseUrl}/capsule/${capsuleId}/success`
-    const cancelUrl = `${baseUrl}/capsule/${capsuleId}`
-
-    console.log('Stripe URLs:')
-    console.log('  Success URL:', successUrl)
-    console.log('  Cancel URL:', cancelUrl)
-
-    // Validate URLs have proper scheme
-    if (!successUrl.startsWith('https://') && !successUrl.startsWith('http://')) {
-      console.error('Success URL missing scheme:', successUrl)
-      return res.status(500).json({
-        error: 'Invalid success URL configuration',
-        successUrl: successUrl,
-      })
+    // Store capsule data in Stripe metadata using indexed keys.
+    // Each capsule_N value: "{uuid}|{YYYY-MM-DD}|{price}" — well under Stripe's 500-char limit per value.
+    const metadata = {
+      userId,
+      capsule_count: String(validatedItems.length),
     }
+    validatedItems.forEach((item, i) => {
+      metadata[`capsule_${i}`] = `${item.capsuleId}|${item.deliveryDate}|${item.price}`
+    })
 
-    // Calculate price: $1.85 per year between today and deliver_at (minimum 1 year)
-    const today = new Date()
-    const deliverDate = new Date(capsule.deliver_at)
-    const msPerYear = 1000 * 60 * 60 * 24 * 365.25
-    const years = Math.max(1, Math.ceil((deliverDate - today) / msPerYear))
-    const pricePerYear = 1.85
-    const totalDollars = +(years * pricePerYear).toFixed(2)
-    const unitAmount = Math.round(totalDollars * 100) // Stripe expects cents
+    const productName = validatedItems.length === 1
+      ? `Seal capsule: "${validatedItems[0].title}"`
+      : `Seal ${validatedItems.length} time capsules`
 
-    console.log(`Pricing: ${years} year(s) × $${pricePerYear} = $${totalDollars} (${unitAmount} cents)`)
+    const description = validatedItems
+      .map(item => `${item.title} — ${item.years}yr × $${PRICE_PER_YEAR}/yr = $${item.price.toFixed(2)}`)
+      .join('; ')
 
-    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Seal Capsule: "${capsule.title}"`,
-              description: `${years} year${years !== 1 ? 's' : ''} × $${pricePerYear}/year — delivered ${new Date(capsule.deliver_at).toLocaleDateString()}.`,
-            },
-            unit_amount: unitAmount,
-          },
-          quantity: 1,
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: productName, description },
+          unit_amount: unitAmount,
         },
-      ],
+        quantity: 1,
+      }],
       mode: 'payment',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: `${baseUrl}/checkout/success`,
+      cancel_url: `${baseUrl}/cart`,
       customer_email: userEmail,
-      metadata: {
-        capsuleId: capsuleId,
-        userId: capsule.user_id,
-      },
+      metadata,
     })
 
-    console.log('Stripe session created:', {
-      sessionId: session.id,
-      url: session.url,
-      metadata: session.metadata,
-    })
-
+    console.log('Stripe session created:', session.id)
     return res.status(200).json({ url: session.url })
   } catch (err) {
-    console.error('Error in checkout-session:', err.message)
-    console.error('Full error:', err)
-    return res.status(500).json({
-      error: `Server error: ${err.message}`,
-      type: err.type,
-    })
+    console.error('Checkout session error:', err.message)
+    return res.status(500).json({ error: err.message })
   }
 }

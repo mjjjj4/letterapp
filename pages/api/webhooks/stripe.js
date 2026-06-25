@@ -5,178 +5,172 @@ import { Resend } from 'resend'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-// Service role client — bypasses RLS, safe for server-only use
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Must disable body parser so we can read the raw body for Stripe signature verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+export const config = { api: { bodyParser: false } }
 
-// Read raw body from request stream (required for Stripe signature verification)
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
-    req.on('data', (chunk) => chunks.push(chunk))
+    req.on('data', chunk => chunks.push(chunk))
     req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
 
+function formatDate(ds) {
+  return new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
 export default async function handler(req, res) {
-  // This fires first — if you don't see this in Vercel logs, Stripe isn't calling the endpoint
   console.log('=== Stripe Webhook Hit ===', new Date().toISOString())
-  console.log('Method:', req.method)
-  console.log('URL:', req.url)
 
-  if (req.method !== 'POST') {
-    console.log('Non-POST request, returning 405')
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  // Check required env vars up front
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set in environment variables')
+    console.error('STRIPE_WEBHOOK_SECRET not set')
     return res.status(500).json({ error: 'Webhook secret not configured' })
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables')
-    return res.status(500).json({ error: 'Supabase service role key not configured' })
+    console.error('SUPABASE_SERVICE_ROLE_KEY not set')
+    return res.status(500).json({ error: 'Service role key not configured' })
   }
 
-  // Read raw body for signature verification
   let rawBody
   try {
     rawBody = await getRawBody(req)
-    console.log('Raw body read, length:', rawBody.length)
+    console.log('Raw body length:', rawBody.length)
   } catch (err) {
     console.error('Failed to read raw body:', err.message)
     return res.status(400).json({ error: 'Failed to read request body' })
   }
 
-  // Verify Stripe signature
-  const sig = req.headers['stripe-signature']
-  console.log('Stripe signature present:', !!sig)
-  console.log('Webhook secret present:', !!process.env.STRIPE_WEBHOOK_SECRET)
-
   let event
   try {
     event = stripe.webhooks.constructEvent(
       rawBody,
-      sig,
+      req.headers['stripe-signature'],
       process.env.STRIPE_WEBHOOK_SECRET
     )
-    console.log('Signature verified. Event type:', event.type, 'ID:', event.id)
+    console.log('Event verified:', event.type, event.id)
   } catch (err) {
     console.error('Signature verification failed:', err.message)
     return res.status(400).json({ error: `Webhook signature error: ${err.message}` })
   }
 
-  // Only handle checkout.session.completed
   if (event.type !== 'checkout.session.completed') {
     console.log('Ignoring event type:', event.type)
     return res.status(200).json({ received: true })
   }
 
   const session = event.data.object
-  console.log('=== Processing checkout.session.completed ===')
-  console.log('Session ID:', session.id)
-  console.log('Payment status:', session.payment_status)
-  console.log('Full metadata:', JSON.stringify(session.metadata))
-  console.log('Customer email:', session.customer_email)
+  console.log('Session ID:', session.id, '| payment status:', session.payment_status)
+  console.log('Metadata:', JSON.stringify(session.metadata))
 
-  const capsuleId = session.metadata?.capsuleId
   const userId = session.metadata?.userId
   const userEmail = session.customer_email
+  const capsuleCount = parseInt(session.metadata?.capsule_count || '0', 10)
 
-  console.log('Extracted capsuleId:', capsuleId)
-  console.log('Extracted userId:', userId)
-  console.log('Extracted userEmail:', userEmail)
-
-  if (!capsuleId) {
-    console.error('No capsuleId in metadata — cannot update capsule')
-    return res.status(400).json({ error: 'Missing capsuleId in Stripe metadata' })
+  if (!userId || capsuleCount === 0) {
+    console.error('Missing userId or capsule_count in metadata')
+    return res.status(400).json({ error: 'Missing required metadata' })
   }
 
-  if (!userId) {
-    console.error('No userId in metadata — cannot update capsule')
-    return res.status(400).json({ error: 'Missing userId in Stripe metadata' })
+  // Parse capsule items from indexed metadata keys
+  const capsuleItems = []
+  for (let i = 0; i < capsuleCount; i++) {
+    const raw = session.metadata[`capsule_${i}`]
+    if (!raw) { console.warn(`Missing capsule_${i} in metadata`); continue }
+    const [capsuleId, deliveryDate, priceStr] = raw.split('|')
+    capsuleItems.push({ capsuleId, deliveryDate, price: parseFloat(priceStr) })
   }
 
-  // Fetch the capsule using admin client
-  console.log('Fetching capsule from Supabase...')
-  const { data: capsules, error: fetchError } = await supabaseAdmin
-    .from('capsules')
-    .select('*')
-    .eq('id', capsuleId)
+  console.log(`Processing ${capsuleItems.length} capsule(s) for user ${userId}`)
 
-  console.log('Fetch error:', fetchError)
-  console.log('Capsules found:', capsules?.length)
-  console.log('Capsule data:', JSON.stringify(capsules))
+  // Seal each capsule and set the delivery date
+  const results = []
+  for (const item of capsuleItems) {
+    console.log(`Sealing capsule ${item.capsuleId} → deliver_at: ${item.deliveryDate}`)
+    const { data, error } = await supabaseAdmin
+      .from('capsules')
+      .update({ status: 'sealed', deliver_at: item.deliveryDate })
+      .eq('id', item.capsuleId)
+      .select('id, title')
 
-  if (fetchError) {
-    console.error('Supabase fetch error:', fetchError.message)
-    return res.status(500).json({ error: `Fetch failed: ${fetchError.message}` })
+    if (error) {
+      console.error(`Failed to seal capsule ${item.capsuleId}:`, error.message)
+      results.push({ ...item, title: '(unknown)', success: false, error: error.message })
+    } else {
+      const title = data?.[0]?.title || '(unknown)'
+      console.log(`Sealed: "${title}"`)
+      results.push({ ...item, title, success: true })
+    }
   }
 
-  if (!capsules || capsules.length === 0) {
-    console.error('Capsule not found for ID:', capsuleId)
-    return res.status(404).json({ error: `Capsule ${capsuleId} not found` })
-  }
-
-  const capsule = capsules[0]
-  console.log('Capsule current status:', capsule.status)
-
-  // Update status to sealed using admin client
-  console.log('Updating capsule status to sealed...')
-  const { data: updateData, error: updateError } = await supabaseAdmin
-    .from('capsules')
-    .update({ status: 'sealed' })
-    .eq('id', capsuleId)
-    .select()
-
-  console.log('Update error:', updateError)
-  console.log('Update result:', JSON.stringify(updateData))
-
-  if (updateError) {
-    console.error('Failed to update capsule:', updateError.message)
-    return res.status(500).json({ error: `Update failed: ${updateError.message}` })
-  }
-
-  console.log('Capsule successfully sealed in Supabase')
+  const succeeded = results.filter(r => r.success)
+  const failed = results.filter(r => !r.success)
+  console.log(`Sealed: ${succeeded.length} | Failed: ${failed.length}`)
 
   // Send confirmation email
-  if (userEmail) {
+  if (userEmail && succeeded.length > 0) {
     try {
-      const deliveryDate = new Date(capsule.deliver_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+      const total = succeeded.reduce((sum, r) => sum + (r.price || 0), 0)
 
-      console.log('Sending confirmation email to:', userEmail)
+      const capsuleRows = succeeded
+        .map(r => `
+          <tr>
+            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#333;">${r.title}</td>
+            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#555;text-align:right;">${formatDate(r.deliveryDate)}</td>
+            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;font-weight:bold;color:#333;text-align:right;">$${r.price.toFixed(2)}</td>
+          </tr>`)
+        .join('')
 
       await resend.emails.send({
         from: 'The Letter <noreply@theletter.app>',
         to: userEmail,
-        subject: `Your capsule "${capsule.title}" has been sealed!`,
+        subject: succeeded.length === 1
+          ? `Your capsule "${succeeded[0].title}" is sealed 🔒`
+          : `${succeeded.length} capsules sealed 🔒`,
         html: `
-          <h2>Your Capsule is Sealed</h2>
-          <p>Your time capsule "<strong>${capsule.title}</strong>" has been sealed and will be delivered on <strong>${deliveryDate}</strong>.</p>
-          <p>— The Letter Team</p>
+          <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#333;">
+            <h2 style="font-size:22px;margin:0 0 8px;">Your capsule${succeeded.length !== 1 ? 's are' : ' is'} sealed 🔒</h2>
+            <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
+              ${succeeded.length === 1
+                ? `We'll deliver <strong>${succeeded[0].title}</strong> to your inbox on <strong>${formatDate(succeeded[0].deliveryDate)}</strong>.`
+                : `We'll deliver each one to your inbox on the dates below. Future you is going to love this.`}
+            </p>
+
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Capsule</th>
+                  <th style="text-align:right;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Delivery Date</th>
+                  <th style="text-align:right;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Cost</th>
+                </tr>
+              </thead>
+              <tbody>${capsuleRows}</tbody>
+            </table>
+
+            <div style="background:#f0fdf4;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;margin-bottom:28px;">
+              <span style="font-size:14px;color:#166534;font-weight:bold;">Total charged</span>
+              <span style="font-size:18px;color:#065f46;font-weight:bold;">$${total.toFixed(2)}</span>
+            </div>
+
+            <p style="font-size:13px;color:#888;line-height:1.6;margin:0;">
+              — The Letter Team
+            </p>
+          </div>
         `,
       })
-      console.log('Confirmation email sent')
-    } catch (emailError) {
-      console.error('Email send failed (non-fatal):', emailError.message)
+      console.log('Confirmation email sent to:', userEmail)
+    } catch (emailErr) {
+      console.error('Email send failed (non-fatal):', emailErr.message)
     }
   }
 
   console.log('=== Webhook complete ===')
-  return res.status(200).json({ received: true })
+  return res.status(200).json({ received: true, sealed: succeeded.length, failed: failed.length })
 }
