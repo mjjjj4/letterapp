@@ -55,21 +55,22 @@ export default function CapsuleDetail() {
     return '#6c757d'
   }
 
-  // Add to cart directly (no modal) then navigate to cart
+  // Save to localStorage synchronously before navigating so cart page sees the item immediately
   const addToCart = () => {
     if (!capsule) return
     const existingDate = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
     const pricing = calcPrice(existingDate)
-    setCart(prev => {
-      const filtered = prev.filter(x => x.capsuleId !== capsule.id)
-      return [...filtered, {
-        capsuleId: capsule.id,
-        title: capsule.title,
-        deliveryDate: pricing ? existingDate : '',
-        years: pricing ? pricing.years : null,
-        price: pricing ? pricing.price : null,
-      }]
-    })
+    const newItem = {
+      capsuleId: capsule.id,
+      title: capsule.title,
+      deliveryDate: pricing ? existingDate : '',
+      years: pricing ? pricing.years : null,
+      price: pricing ? pricing.price : null,
+    }
+    const currentCart = loadCart()
+    const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
+    saveCart(newCart)   // synchronous — localStorage updated before push
+    setCart(newCart)
     router.push('/cart')
   }
 

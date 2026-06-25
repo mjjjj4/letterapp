@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
   const [cart, setCart] = useState([])
+  const [deleting, setDeleting] = useState(null)
 
   useEffect(() => {
     const init = async () => {
@@ -43,21 +44,40 @@ export default function Dashboard() {
   const formatDate = (ds) =>
     new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  // Add capsule directly to cart (no modal) then navigate to cart
+  // Save to localStorage synchronously before navigating so cart page sees the item immediately
   const addToCart = (capsule) => {
     const existingDate = capsule.deliver_at ? capsule.deliver_at.split('T')[0] : ''
     const pricing = calcPrice(existingDate)
-    setCart(prev => {
-      const filtered = prev.filter(x => x.capsuleId !== capsule.id)
-      return [...filtered, {
-        capsuleId: capsule.id,
-        title: capsule.title,
-        deliveryDate: pricing ? existingDate : '',
-        years: pricing ? pricing.years : null,
-        price: pricing ? pricing.price : null,
-      }]
-    })
+    const newItem = {
+      capsuleId: capsule.id,
+      title: capsule.title,
+      deliveryDate: pricing ? existingDate : '',
+      years: pricing ? pricing.years : null,
+      price: pricing ? pricing.price : null,
+    }
+    const currentCart = loadCart()
+    const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
+    saveCart(newCart)   // synchronous — localStorage is updated before push
+    setCart(newCart)
     router.push('/cart')
+  }
+
+  const deleteDraft = async (capsule) => {
+    if (!window.confirm(`Delete "${capsule.title}"? This can't be undone.`)) return
+    setDeleting(capsule.id)
+    const { error } = await supabase.from('capsules').delete().eq('id', capsule.id)
+    if (error) {
+      alert('Failed to delete: ' + error.message)
+      setDeleting(null)
+      return
+    }
+    setCapsules(prev => prev.filter(c => c.id !== capsule.id))
+    setCart(prev => {
+      const updated = prev.filter(x => x.capsuleId !== capsule.id)
+      saveCart(updated)
+      return updated
+    })
+    setDeleting(null)
   }
 
   const isInCart = (id) => cart.some(x => x.capsuleId === id)
@@ -158,6 +178,14 @@ export default function Dashboard() {
                       )}
                       <button onClick={() => router.push(`/capsule/${c.id}`)} style={s.editBtn}>
                         Edit
+                      </button>
+                      <button
+                        onClick={() => deleteDraft(c)}
+                        style={s.deleteBtn}
+                        disabled={deleting === c.id}
+                        title="Delete draft"
+                      >
+                        {deleting === c.id ? '...' : '🗑'}
                       </button>
                     </div>
                   </div>
@@ -289,6 +317,7 @@ const s = {
   sealBtn: { flex: 1, padding: '13px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
   viewCartBtn: { flex: 1, padding: '13px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
   editBtn: { padding: '13px 20px', backgroundColor: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
+  deleteBtn: { padding: '13px 14px', backgroundColor: '#fff', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '15px', cursor: 'pointer', lineHeight: 1 },
 
   sealedCard: { backgroundColor: '#f5f5f5', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '18px 20px', opacity: 0.75 },
   sealedInner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' },
