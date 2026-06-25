@@ -55,7 +55,7 @@ export default function Signup() {
         }
       }
 
-      router.push('/login')
+      router.push(`/verify?email=${encodeURIComponent(email)}`)
     } catch (err) {
       setError(err.message || 'An error occurred during signup')
       setLoading(false)
