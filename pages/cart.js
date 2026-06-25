@@ -14,7 +14,7 @@ export default function Cart() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      if (!user) { router.push('/'); return }
       setUser(user)
       setCart(loadCart())
       setLoading(false)

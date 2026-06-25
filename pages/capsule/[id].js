@@ -16,7 +16,7 @@ export default function CapsuleDetail() {
     const init = async () => {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) { router.push('/login'); return }
+        if (authError || !user) { router.push('/'); return }
         setUser(user)
         if (!id) return
 

@@ -32,13 +32,13 @@ export default function CreateCapsule() {
 
         if (error) {
           console.error('Auth error:', error)
-          router.push('/login')
+          router.push('/')
           return
         }
 
         if (!user) {
           console.warn('No user found, redirecting to login')
-          router.push('/login')
+          router.push('/')
           return
         }
 
@@ -47,7 +47,7 @@ export default function CreateCapsule() {
         setLoading(false)
       } catch (err) {
         console.error('Error checking user:', err)
-        router.push('/login')
+        router.push('/')
       }
     }
     checkUser()

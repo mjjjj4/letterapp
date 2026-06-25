@@ -16,7 +16,7 @@ export default function Dashboard() {
     const init = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-        if (error || !user) { router.push('/login'); return }
+        if (error || !user) { router.push('/'); return }
         setUser(user)
         const { data, error: capsuleError } = await supabase
           .from('capsules')
