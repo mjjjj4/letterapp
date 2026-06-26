@@ -3,11 +3,12 @@ import Head from 'next/head'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function About() {
   const router = useRouter()
@@ -78,21 +79,21 @@ const s = {
     fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
     textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 12,
   },
-  title: { fontFamily: F.serif, fontSize: 42, color: CHARCOAL },
+  title: { fontFamily: F.serif, fontSize: 42, fontWeight: 600, color: MAROON },
   body: { display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 56 },
-  p: { fontFamily: F.sans, fontSize: 17, color: '#444', lineHeight: 1.9 },
-  h2: { fontFamily: F.serif, fontSize: 24, color: CHARCOAL, marginTop: 12 },
+  p: { fontFamily: F.sans, fontSize: 17, color: INK, lineHeight: 1.9 },
+  h2: { fontFamily: F.serif, fontSize: 24, fontWeight: 600, color: MAROON, marginTop: 12 },
   quote: {
-    backgroundColor: CHARCOAL, borderRadius: 12, padding: '28px 32px', margin: '8px 0',
+    backgroundColor: MAROON, borderRadius: 10, padding: '28px 32px', margin: '8px 0',
   },
   quoteText: {
-    fontFamily: F.serif, fontSize: 20, color: BLUSH,
+    fontFamily: F.serif, fontSize: 20, color: CREAM,
     fontStyle: 'italic', lineHeight: 1.6,
   },
   link: { color: WINE, textDecoration: 'none', fontWeight: 600 },
   cta: { textAlign: 'center' },
   ctaBtn: {
-    padding: '14px 36px', backgroundColor: WINE, color: '#fff',
+    padding: '14px 36px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
 }

@@ -5,11 +5,13 @@ import { supabase } from '../lib/supabase'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Verify() {
   const router = useRouter()
@@ -35,7 +37,7 @@ export default function Verify() {
         <div style={s.card}>
           <div style={s.iconWrap}>
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" rx="24" fill="#fdf0ee"/>
+              <rect width="48" height="48" rx="24" fill="rgba(77,0,0,0.08)"/>
               <path d="M10 16a2 2 0 012-2h24a2 2 0 012 2v16a2 2 0 01-2 2H12a2 2 0 01-2-2V16z" stroke={WINE} strokeWidth="2" fill="none"/>
               <path d="M10 16l14 10 14-10" stroke={WINE} strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -95,20 +97,19 @@ const s = {
     backgroundColor: CREAM, padding: '40px 20px',
   },
   card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: '44px 40px',
+    backgroundColor: CREAM, borderRadius: 10, padding: '44px 40px',
     width: '100%', maxWidth: 440, textAlign: 'center',
-    boxShadow: '0 8px 40px rgba(149,35,35,0.08)',
-    border: `1px solid ${BLUSH}`,
+    border: `1px solid ${BORDER}`,
   },
   iconWrap: { marginBottom: 20 },
   title: {
-    fontFamily: F.serif, fontSize: 26, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 14px',
+    fontFamily: F.serif, fontSize: 26, fontWeight: 600,
+    color: MAROON, margin: '0 0 14px',
   },
-  body: { fontFamily: F.sans, fontSize: 15, color: '#666', lineHeight: 1.6, margin: '0 0 6px' },
+  body: { fontFamily: F.sans, fontSize: 15, color: MUTED, lineHeight: 1.6, margin: '0 0 6px' },
   email: {
-    fontFamily: F.sans, fontSize: 15, fontWeight: 700, color: CHARCOAL,
-    backgroundColor: `${BLUSH}33`, padding: '10px 16px',
+    fontFamily: F.sans, fontSize: 15, fontWeight: 700, color: INK,
+    backgroundColor: 'rgba(77,0,0,0.06)', padding: '10px 16px',
     borderRadius: 6, margin: '4px 0 14px', wordBreak: 'break-all',
   },
   spamNote: {
@@ -126,7 +127,7 @@ const s = {
   },
   successNote: { fontFamily: F.sans, fontSize: 13, color: '#16a34a', marginTop: 10 },
   errorNote: { fontFamily: F.sans, fontSize: 13, color: '#dc2626', marginTop: 10 },
-  divider: { borderTop: `1px solid ${BLUSH}`, margin: '28px 0 20px' },
-  footer: { fontFamily: F.sans, fontSize: 14, color: '#888', margin: '0 0 10px' },
+  divider: { borderTop: `1px solid ${BORDER}`, margin: '28px 0 20px' },
+  footer: { fontFamily: F.sans, fontSize: 14, color: MUTED, margin: '0 0 10px' },
   link: { color: WINE, textDecoration: 'none', fontWeight: 600 },
 }

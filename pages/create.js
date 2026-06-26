@@ -5,11 +5,13 @@ import { supabase } from '../lib/supabase'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function CreateCapsule() {
   const router = useRouter()
@@ -108,7 +110,7 @@ export default function CreateCapsule() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CREAM }}>
-        <p style={{ fontFamily: F.sans, fontSize: 16, color: '#888' }}>Loading…</p>
+        <p style={{ fontFamily: F.sans, fontSize: 16, color: MUTED }}>Loading…</p>
       </div>
     )
   }
@@ -145,7 +147,7 @@ export default function CreateCapsule() {
                   placeholder="Give your capsule a title…"
                   style={s.input} maxLength={100} required disabled={submitting}
                 />
-                <p style={{ ...s.hint, color: formData.title.length >= 90 ? '#dc3545' : '#aaa' }}>
+                <p style={{ ...s.hint, color: formData.title.length >= 90 ? '#dc3545' : MUTED }}>
                   {formData.title.length}/100 characters
                 </p>
               </div>
@@ -246,34 +248,34 @@ const s = {
   container: { maxWidth: 720, margin: '0 auto', padding: '40px 20px 0' },
 
   header: { marginBottom: 32 },
-  pageTitle: { fontFamily: F.serif, fontSize: 32, fontWeight: 700, color: CHARCOAL, marginBottom: 8 },
-  pageSub: { fontFamily: F.sans, fontSize: 15, color: '#888', lineHeight: 1.5 },
+  pageTitle: { fontFamily: F.serif, fontSize: 32, fontWeight: 600, color: MAROON, marginBottom: 8 },
+  pageSub: { fontFamily: F.sans, fontSize: 15, color: MUTED, lineHeight: 1.5 },
 
   form: { display: 'flex', flexDirection: 'column', gap: 0 },
   section: {
-    backgroundColor: '#fff', borderRadius: 14, padding: '28px 28px 8px',
-    marginBottom: 20, border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, borderRadius: 10, padding: '28px 28px 8px',
+    marginBottom: 20, border: `1px solid ${BORDER}`,
   },
   sectionTitle: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 700,
-    color: CHARCOAL, marginBottom: 6,
+    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
+    color: MAROON, marginBottom: 6,
   },
-  sectionSub: { fontFamily: F.sans, fontSize: 13, color: '#aaa', marginBottom: 20 },
-  opt: { fontFamily: F.sans, fontSize: 13, color: '#bbb', fontWeight: 400 },
+  sectionSub: { fontFamily: F.sans, fontSize: 13, color: MUTED, marginBottom: 20 },
+  opt: { fontFamily: F.sans, fontSize: 13, color: MUTED, fontWeight: 400 },
   req: { color: WINE },
 
   field: { marginBottom: 20 },
   row: { display: 'flex', gap: 16, flexWrap: 'wrap' },
-  label: { fontFamily: F.sans, fontSize: 13, fontWeight: 600, color: CHARCOAL, display: 'block', marginBottom: 6 },
+  label: { fontFamily: F.sans, fontSize: 13, fontWeight: 600, color: INK, display: 'block', marginBottom: 6 },
   input: {
     width: '100%', padding: '11px 14px',
-    border: `1.5px solid ${BLUSH}`, borderRadius: 8,
+    border: `1.5px solid ${BORDER}`, borderRadius: 8,
     fontSize: 14, fontFamily: F.sans, outline: 'none',
-    backgroundColor: '#fff', boxSizing: 'border-box',
+    backgroundColor: CREAM, boxSizing: 'border-box',
   },
   textarea: { minHeight: 200, resize: 'vertical', fontFamily: F.sans },
   textareaSm: { minHeight: 100, resize: 'vertical', fontFamily: F.sans },
-  hint: { fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: '4px 0 0', textAlign: 'right' },
+  hint: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0', textAlign: 'right' },
   fileOk: { fontFamily: F.sans, fontSize: 12, color: '#10b981', margin: '6px 0 0' },
 
   error: {
@@ -284,11 +286,11 @@ const s = {
 
   actions: { display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 },
   cancelBtn: {
-    padding: '12px 24px', backgroundColor: 'transparent', color: '#888',
-    border: `1px solid ${BLUSH}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
+    padding: '12px 24px', backgroundColor: 'transparent', color: MUTED,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
   },
   submitBtn: {
-    padding: '12px 32px', backgroundColor: WINE, color: '#fff',
+    padding: '12px 32px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
 }

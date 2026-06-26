@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 
-const WINE = '#952323'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const WINE = '#8A2323'
+const MAROON = '#4D0000'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function SignupModal({ onClose }) {
   const router = useRouter()
@@ -81,34 +85,34 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
   },
   modal: {
-    backgroundColor: '#fff', borderRadius: 16, padding: '40px 36px',
+    backgroundColor: CREAM, borderRadius: 10, padding: '40px 36px',
     width: '100%', maxWidth: 420, position: 'relative',
     maxHeight: '90vh', overflowY: 'auto',
-    boxShadow: '0 20px 60px rgba(57,50,50,0.25)',
+    border: `1px solid ${BORDER}`,
   },
   closeBtn: {
     position: 'absolute', top: 16, right: 16,
     background: 'transparent', border: 'none', fontSize: 20,
-    color: '#bbb', padding: 4, lineHeight: 1,
+    color: MUTED, padding: 4, lineHeight: 1,
   },
   icon: { fontSize: 36, textAlign: 'center', marginBottom: 14 },
   title: {
-    fontFamily: F.serif, fontSize: 24, fontWeight: 700,
-    color: CHARCOAL, textAlign: 'center', marginBottom: 6,
+    fontFamily: F.serif, fontSize: 24, fontWeight: 600,
+    color: MAROON, textAlign: 'center', marginBottom: 6,
   },
   sub: {
-    fontSize: 14, color: '#888', textAlign: 'center',
+    fontSize: 14, color: MUTED, textAlign: 'center',
     marginBottom: 24, lineHeight: 1.5, fontFamily: F.sans,
   },
   form: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: {
-    fontSize: 13, fontWeight: 600, color: CHARCOAL,
+    fontSize: 13, fontWeight: 600, color: INK,
     marginBottom: 4, marginTop: 12, fontFamily: F.sans,
   },
   input: {
     width: '100%', padding: '11px 14px',
-    border: '1.5px solid #EDBFC6', borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, outline: 'none', backgroundColor: '#fff',
+    border: `1.5px solid ${BORDER}`, borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, outline: 'none', backgroundColor: CREAM,
   },
   error: {
     backgroundColor: '#fdf2f2', color: '#8a2323',
@@ -117,14 +121,14 @@ const s = {
   },
   submit: {
     marginTop: 20, padding: 13, width: '100%',
-    backgroundColor: WINE, color: '#fff', border: 'none',
+    backgroundColor: WINE, color: '#FFFBF5', border: 'none',
     borderRadius: 8, fontSize: 15, fontWeight: 600,
     fontFamily: F.sans,
   },
-  footer: { textAlign: 'center', marginTop: 18, fontSize: 13, color: '#888', fontFamily: F.sans },
+  footer: { textAlign: 'center', marginTop: 18, fontSize: 13, color: MUTED, fontFamily: F.sans },
   footerLink: { color: WINE, cursor: 'pointer', fontWeight: 600 },
   charity: {
-    marginTop: 14, fontSize: 11, color: '#999',
+    marginTop: 14, fontSize: 11, color: MUTED,
     textAlign: 'center', fontFamily: F.sans, lineHeight: 1.5,
   },
   charityLink: { color: WINE, textDecoration: 'none', fontWeight: 600 },

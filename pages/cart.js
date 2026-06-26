@@ -6,11 +6,13 @@ import { calcPrice, getPromoInfo, describeTime, getMinDate, loadCart, saveCart }
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Cart() {
   const router = useRouter()
@@ -106,7 +108,7 @@ export default function Cart() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CREAM }}>
-        <p style={{ fontFamily: F.sans, fontSize: 16, color: '#888' }}>Loading…</p>
+        <p style={{ fontFamily: F.sans, fontSize: 16, color: MUTED }}>Loading…</p>
       </div>
     )
   }
@@ -201,8 +203,8 @@ export default function Cart() {
                               <span style={cs.priceLabel}>Rate</span>
                               <span style={cs.priceValue}>$1.85/year</span>
                             </div>
-                            <div style={{ ...cs.priceRow, borderTop: `1px solid ${BLUSH}`, paddingTop: 10, marginTop: 4 }}>
-                              <span style={{ ...cs.priceLabel, fontWeight: 700, color: CHARCOAL }}>
+                            <div style={{ ...cs.priceRow, borderTop: `1px solid ${BORDER}`, paddingTop: 10, marginTop: 4 }}>
+                              <span style={{ ...cs.priceLabel, fontWeight: 700, color: INK }}>
                                 {item.years} yr &times; $1.85
                               </span>
                               <span style={cs.itemPrice}>${item.price.toFixed(2)}</span>
@@ -305,34 +307,34 @@ const cs = {
   page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
   body: { maxWidth: 620, margin: '0 auto', padding: '32px 16px 80px' },
   pageTitle: {
-    fontFamily: F.serif, fontSize: 32, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 20px',
+    fontFamily: F.serif, fontSize: 32, fontWeight: 600,
+    color: MAROON, margin: '0 0 20px',
   },
 
   promoBanner: {
     display: 'flex', alignItems: 'flex-start', gap: 12,
-    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderLeft: `4px solid ${WINE}`, borderRadius: 10,
     padding: '14px 16px', marginBottom: 20,
   },
   promoBannerIcon: { fontSize: 18, flexShrink: 0 },
-  promoBannerText: { fontFamily: F.sans, fontSize: 14, color: CHARCOAL, lineHeight: 1.6, margin: 0 },
+  promoBannerText: { fontFamily: F.sans, fontSize: 14, color: INK, lineHeight: 1.6, margin: 0 },
 
   emptyCart: {
-    backgroundColor: '#fff', border: `2px dashed ${BLUSH}`,
-    borderRadius: 12, padding: '48px 24px', textAlign: 'center',
+    backgroundColor: CREAM, border: `2px dashed ${BORDER}`,
+    borderRadius: 10, padding: '48px 24px', textAlign: 'center',
   },
   emptyIcon: { fontSize: 40, margin: '0 0 14px' },
   emptyHeadline: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 10px',
+    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
+    color: MAROON, margin: '0 0 10px',
   },
   emptyBody: {
-    fontFamily: F.sans, fontSize: 14, color: '#888',
+    fontFamily: F.sans, fontSize: 14, color: MUTED,
     margin: '0 auto 28px', lineHeight: 1.6, maxWidth: 340,
   },
   dashBtn: {
-    padding: '12px 28px', backgroundColor: WINE, color: '#fff',
+    padding: '12px 28px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
 
@@ -344,17 +346,16 @@ const cs = {
 
   itemList: { display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 },
   cartItem: {
-    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
-    borderLeft: `4px solid ${WINE}`, borderRadius: 12, padding: 20,
-    boxShadow: '0 2px 10px rgba(149,35,35,0.06)',
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderLeft: `4px solid ${WINE}`, borderRadius: 10, padding: 20,
   },
   itemHeader: {
     display: 'flex', justifyContent: 'space-between',
     alignItems: 'flex-start', gap: 12, marginBottom: 16,
   },
   itemTitle: {
-    fontFamily: F.serif, fontSize: 16, fontWeight: 700,
-    color: CHARCOAL, margin: 0, wordBreak: 'break-word', flex: 1, lineHeight: 1.4,
+    fontFamily: F.serif, fontSize: 16, fontWeight: 600,
+    color: INK, margin: 0, wordBreak: 'break-word', flex: 1, lineHeight: 1.4,
   },
   removeBtn: {
     padding: '5px 12px', backgroundColor: 'transparent', color: '#dc2626',
@@ -365,12 +366,12 @@ const cs = {
   dateSection: { marginBottom: 12 },
   dateLabel: {
     display: 'block', fontFamily: F.sans, fontSize: 11, fontWeight: 700,
-    color: '#666', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px',
+    color: MUTED, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   dateInputEmpty: {
     width: '100%', padding: '10px 12px',
-    border: `1.5px dashed ${BLUSH}`, borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fdfbfa',
+    border: `1.5px dashed ${BORDER}`, borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: CREAM,
   },
   dateInputValid: {
     width: '100%', padding: '10px 12px',
@@ -384,9 +385,8 @@ const cs = {
   },
   dateError: { fontFamily: F.sans, fontSize: 12, color: '#dc2626', margin: '6px 0 0' },
 
-  // Founder promo breakdown
   promoBreakdown: {
-    backgroundColor: `${BLUSH}30`, border: `1px solid ${BLUSH}`,
+    backgroundColor: 'rgba(77,0,0,0.04)', border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '12px 14px', marginTop: 4,
   },
   promoRow: {
@@ -396,67 +396,66 @@ const cs = {
     fontFamily: F.sans, fontSize: 13, fontWeight: 700, color: WINE,
     margin: '0 0 4px',
   },
-  promoDelivery: { fontFamily: F.sans, fontSize: 12, color: CHARCOAL, margin: '0 0 2px' },
-  promoWindow: { fontFamily: F.sans, fontSize: 11, color: '#888', margin: 0 },
+  promoDelivery: { fontFamily: F.sans, fontSize: 12, color: INK, margin: '0 0 2px' },
+  promoWindow: { fontFamily: F.sans, fontSize: 11, color: MUTED, margin: 0 },
   promoFree: {
     fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE,
     flexShrink: 0,
   },
 
-  // Standard price breakdown
   priceBreakdown: {
-    backgroundColor: '#fdfbfa', border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '12px 14px', marginTop: 4,
   },
   priceRow: {
     display: 'flex', justifyContent: 'space-between',
     alignItems: 'center', paddingBottom: 6, marginBottom: 6,
   },
-  priceLabel: { fontFamily: F.sans, fontSize: 12, color: '#777' },
-  priceValue: { fontFamily: F.sans, fontSize: 12, color: CHARCOAL, fontWeight: 700 },
+  priceLabel: { fontFamily: F.sans, fontSize: 12, color: MUTED },
+  priceValue: { fontFamily: F.sans, fontSize: 12, color: INK, fontWeight: 700 },
   itemPrice: { fontFamily: F.sans, fontSize: 18, fontWeight: 700, color: WINE },
-  dateMissing: { fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: '4px 0 0', fontStyle: 'italic' },
+  dateMissing: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0', fontStyle: 'italic' },
 
   summary: {
-    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
-    borderRadius: 12, padding: '18px 20px', marginBottom: 14,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderRadius: 10, padding: '18px 20px', marginBottom: 14,
   },
   summaryHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  summaryCount: { fontFamily: F.sans, fontSize: 14, color: '#888' },
+  summaryCount: { fontFamily: F.sans, fontSize: 14, color: MUTED },
   summaryTotal: { fontFamily: F.sans, fontSize: 26, fontWeight: 700, color: WINE },
-  summaryPending: { fontFamily: F.sans, fontSize: 13, color: '#aaa', fontStyle: 'italic' },
-  summaryBreakdown: { fontFamily: F.sans, fontSize: 13, color: '#888', margin: 0 },
+  summaryPending: { fontFamily: F.sans, fontSize: 13, color: MUTED, fontStyle: 'italic' },
+  summaryBreakdown: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
 
   allDatesHint: {
-    fontFamily: F.sans, fontSize: 13, color: '#888',
+    fontFamily: F.sans, fontSize: 13, color: MUTED,
     textAlign: 'center', margin: '0 0 16px',
   },
 
   actions: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 },
   checkoutBtn: {
-    width: '100%', padding: 16, backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 10, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
+    width: '100%', padding: 16, backgroundColor: WINE, color: CREAM,
+    border: 'none', borderRadius: 8, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
   },
   continueBtn: {
-    width: '100%', padding: 14, backgroundColor: '#fff', color: '#666',
-    border: `1px solid ${BLUSH}`, borderRadius: 10, fontSize: 15,
+    width: '100%', padding: 14, backgroundColor: CREAM, color: MUTED,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 15,
     fontWeight: 600, fontFamily: F.sans,
   },
   secureNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: '0 0 6px',
+    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '0 0 6px',
   },
   promoNote: {
     textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE,
     fontWeight: 600, margin: 0,
   },
   npcfNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#777',
+    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED,
     margin: 0, lineHeight: 1.5,
   },
   donationLine: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderTop: `1px dashed ${BLUSH}`, paddingTop: 8, marginTop: 8,
+    borderTop: `1px dashed ${BORDER}`, paddingTop: 8, marginTop: 8,
   },
-  donationLabel: { fontFamily: F.sans, fontSize: 11, color: '#888' },
+  donationLabel: { fontFamily: F.sans, fontSize: 11, color: MUTED },
   donationValue: { fontFamily: F.sans, fontSize: 11, color: '#b45309', fontWeight: 600 },
 }

@@ -9,46 +9,46 @@ import CharityBanner from '../components/CharityBanner'
 
 const BANNERS = [
   {
-    bg: 'linear-gradient(150deg, #FFE6E1 0%, #EDBFC6 60%, #d9a5b0 100%)',
+    bg: '#FFFBF5',
     overlay: false,
     headline: null,
   },
   {
-    bg: 'linear-gradient(150deg, #6b1010 0%, #952323 55%, #7a1c1c 100%)',
+    bg: '#4D0000',
     founderPromo: true,
   },
   {
-    bg: 'linear-gradient(160deg, #1e0808 0%, #2c1010 50%, #3d1515 100%)',
-    overlay: true,
+    bg: '#3A2418',
+    overlay: false,
     headline: 'Preserve your memories',
   },
   {
-    bg: 'linear-gradient(160deg, #f5e6d0 0%, #e0ccaa 50%, #c8b090 100%)',
-    overlay: true,
+    bg: '#4D0000',
+    overlay: false,
     headline: 'Write to your future self',
   },
   {
-    bg: 'linear-gradient(160deg, #c8b4a8 0%, #b09888 50%, #c8b4a8 100%)',
-    overlay: true,
+    bg: '#3A2418',
+    overlay: false,
     headline: "Open it when you're ready",
   },
 ]
 
 const JOURNEY = [
   {
-    bg: 'linear-gradient(160deg, #f0e6d2 0%, #dcc9a8 50%, #c8b48c 100%)',
+    bg: '#4D0000',
     step: '01',
     label: 'Write your letter',
     desc: 'Find the words only you can say. Tell your future self about who you are right now — your dreams, your fears, the song you have on repeat. There is no right way.',
   },
   {
-    bg: 'linear-gradient(160deg, #4a1515 0%, #2a0808 50%, #1a0505 100%)',
+    bg: '#3A2418',
     step: '02',
     label: 'We keep it safe',
     desc: 'Your capsule is sealed and stored securely. For just $1.85 per year, every word is protected until the date you choose — no subscriptions, no surprises.',
   },
   {
-    bg: 'linear-gradient(160deg, #f2d4d0 0%, #e0b4ae 50%, #cfa09a 100%)',
+    bg: '#8A2323',
     step: '03',
     label: 'Open when ready',
     desc: 'On your chosen date, your letter arrives in your inbox. Read it alone or with someone you love — a reminder of who you were, for who you have become.',
@@ -140,9 +140,7 @@ export default function Home() {
               zIndex: i === current ? 1 : 0,
             }}
           >
-            {b.overlay && <div style={hero.overlay} />}
-
-            {/* Banner 1 — main CTA */}
+            {/* Banner 1 — main CTA (light background) */}
             {i === 0 && (
               <div style={hero.inner}>
                 <p style={hero.logoLabel}>The Letter</p>
@@ -157,7 +155,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Banner 2 — Founder Promo */}
+            {/* Banner 2 — Founder Promo (dark background) */}
             {b.founderPromo && (
               <div style={hero.inner}>
                 <p style={hero.promoEyebrow}>Limited time offer</p>
@@ -172,7 +170,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Remaining banners — headline only */}
+            {/* Remaining banners — headline only (dark backgrounds) */}
             {!b.founderPromo && i > 0 && b.headline && (
               <div style={hero.inner}>
                 <h2 style={hero.overlayHeadline}>{b.headline}</h2>
@@ -214,7 +212,6 @@ export default function Home() {
             <div key={i} className="journey-card">
               {/* Image area with label */}
               <div className="journey-img" style={{ background: card.bg }}>
-                <div style={journey.imgOverlay} />
                 <div style={journey.imgInner}>
                   <span style={journey.step}>{card.step}</span>
                   <h3 style={journey.label}>{card.label}</h3>
@@ -269,7 +266,7 @@ const pageCss = `
 
   /* Journey */
   .journey-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .journey-card { background: #FFE6E1; overflow: hidden; }
+  .journey-card { background: #FFFBF5; overflow: hidden; }
   .journey-img {
     height: 280px; position: relative; overflow: hidden;
     display: flex; align-items: flex-end;
@@ -304,11 +301,11 @@ const pageCss = `
   }
 `
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const INK = '#3A2418'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 const hero = {
   wrap: {},
@@ -317,46 +314,43 @@ const hero = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'opacity 0.9s ease-in-out',
   },
-  overlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(57,50,50,0.42)' },
   inner: { position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px', maxWidth: 700 },
   logoLabel: {
     fontFamily: F.serif, fontSize: 15, fontWeight: 600,
-    color: WINE, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
+    color: MAROON, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 20,
   },
   mainHeadline: {
     fontFamily: F.serif, fontSize: 'clamp(40px,7vw,72px)',
-    fontWeight: 700, color: WINE, lineHeight: 1.1, marginBottom: 22,
+    fontWeight: 600, color: MAROON, lineHeight: 1.1, marginBottom: 22,
   },
   mainSub: {
     fontFamily: F.sans, fontSize: 'clamp(16px,2.5vw,20px)',
-    color: CHARCOAL, lineHeight: 1.7, marginBottom: 36, fontWeight: 300,
+    color: INK, lineHeight: 1.7, marginBottom: 36, fontWeight: 300,
   },
   overlayHeadline: {
     fontFamily: F.serif, fontSize: 'clamp(32px,6vw,60px)',
-    fontWeight: 700, color: '#fff', lineHeight: 1.15,
-    textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+    fontWeight: 600, color: '#FFFBF5', lineHeight: 1.15,
   },
   cta: {
-    padding: '14px 40px', backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600,
+    padding: '14px 40px', backgroundColor: WINE, color: CREAM,
+    border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600,
     fontFamily: F.sans, letterSpacing: '0.3px',
   },
   promoEyebrow: {
-    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: '#f5b8b8',
+    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: 'rgba(255,251,245,0.7)',
     textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 14,
   },
   promoHeadline: {
     fontFamily: F.serif, fontSize: 'clamp(36px,6vw,58px)',
-    fontWeight: 700, color: '#fff', lineHeight: 1.1, marginBottom: 18,
-    textShadow: '0 2px 20px rgba(0,0,0,0.25)',
+    fontWeight: 600, color: CREAM, lineHeight: 1.1, marginBottom: 18,
   },
   promoSub: {
     fontFamily: F.sans, fontSize: 'clamp(15px,2vw,18px)',
-    color: '#fde8e8', lineHeight: 1.7, marginBottom: 32, fontWeight: 300,
+    color: 'rgba(255,251,245,0.8)', lineHeight: 1.7, marginBottom: 32, fontWeight: 300,
   },
   promoCta: {
-    padding: '14px 40px', backgroundColor: '#fff', color: WINE,
-    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 700,
+    padding: '14px 40px', backgroundColor: CREAM, color: WINE,
+    border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 700,
     fontFamily: F.sans, letterSpacing: '0.2px',
   },
   arrow: {
@@ -384,29 +378,26 @@ const hero = {
 
 const journey = {
   section: { overflow: 'hidden' },
-  imgOverlay: {
-    position: 'absolute', inset: 0, backgroundColor: 'rgba(57,50,50,0.35)',
-  },
   imgInner: {
     position: 'relative', zIndex: 1, padding: '20px 24px',
     display: 'flex', flexDirection: 'column', gap: 6, width: '100%',
+    marginTop: 'auto',
   },
   step: {
     fontFamily: F.sans, fontSize: 11, fontWeight: 700,
-    color: 'rgba(255,255,255,0.7)', letterSpacing: '2px', textTransform: 'uppercase',
+    color: 'rgba(255,251,245,0.7)', letterSpacing: '2px', textTransform: 'uppercase',
   },
   label: {
     fontFamily: F.serif, fontSize: 'clamp(20px,2.5vw,28px)',
-    fontWeight: 700, color: '#fff', lineHeight: 1.2,
-    textShadow: '0 2px 12px rgba(0,0,0,0.2)',
+    fontWeight: 600, color: '#FFFBF5', lineHeight: 1.2,
   },
   cardBody: {
     backgroundColor: CREAM,
     padding: '24px 28px 32px',
-    borderBottom: `1px solid rgba(237,191,198,0.4)`,
+    borderBottom: '1px solid rgba(77,0,0,0.1)',
   },
   cardDesc: {
-    fontFamily: F.sans, fontSize: 15, color: CHARCOAL,
+    fontFamily: F.sans, fontSize: 15, color: INK,
     lineHeight: 1.75, fontWeight: 300,
   },
 }
@@ -415,34 +406,33 @@ const test = {
   section: { backgroundColor: CREAM, padding: '72px 28px' },
   heading: {
     fontFamily: F.serif, fontSize: 'clamp(26px,4vw,38px)',
-    fontWeight: 700, color: CHARCOAL, textAlign: 'center', marginBottom: 40,
+    fontWeight: 600, color: MAROON, textAlign: 'center', marginBottom: 40,
   },
   grid: { maxWidth: 1200, margin: '0 auto' },
   card: {
-    backgroundColor: '#fff', borderRadius: 12,
-    border: `1.5px solid ${BLUSH}`,
+    backgroundColor: '#FFFBF5', borderRadius: 10,
+    border: '1px solid rgba(77, 0, 0, 0.15)',
     padding: '28px 24px',
-    boxShadow: '0 2px 14px rgba(149,35,35,0.06)',
     display: 'flex', flexDirection: 'column', gap: 12,
   },
   stars: { display: 'flex', gap: 2 },
   star: { color: WINE, fontSize: 18 },
-  quote: { fontFamily: F.serif, fontSize: 15, color: CHARCOAL, lineHeight: 1.75, fontStyle: 'italic', flex: 1 },
-  name: { fontFamily: F.sans, fontSize: 13, color: '#888', fontWeight: 500 },
+  quote: { fontFamily: F.serif, fontSize: 15, color: INK, lineHeight: 1.75, fontStyle: 'italic', flex: 1 },
+  name: { fontFamily: F.sans, fontSize: 13, color: '#7A6A5A', fontWeight: 500 },
 }
 
 const cta = {
-  section: { backgroundColor: BLUSH, padding: '80px 24px', textAlign: 'center' },
+  section: { backgroundColor: MAROON, padding: '80px 24px', textAlign: 'center' },
   heading: {
     fontFamily: F.serif, fontSize: 'clamp(26px,4vw,40px)',
-    fontWeight: 700, color: CHARCOAL, marginBottom: 14, lineHeight: 1.25,
+    fontWeight: 600, color: '#FFFBF5', marginBottom: 14, lineHeight: 1.25,
   },
   sub: {
-    fontFamily: F.sans, fontSize: 17, color: CHARCOAL,
-    opacity: 0.7, marginBottom: 32,
+    fontFamily: F.sans, fontSize: 17, color: 'rgba(255,251,245,0.75)',
+    marginBottom: 32,
   },
   btn: {
-    padding: '16px 48px', backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
+    padding: '16px 48px', backgroundColor: WINE, color: '#FFFBF5',
+    border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
   },
 }

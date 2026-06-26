@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 
-const WINE = '#952323'
-const CHARCOAL = '#393232'
-const F = { sans: "'Inter',Arial,sans-serif", serif: "'Lora','Georgia',serif" }
+const WINE = '#8A2323'
+const INK = '#3A2418'
+const F = { sans: "'Inter',Arial,sans-serif" }
 
 export default function CharityBanner() {
   const [donated, setDonated] = useState(null)
@@ -41,16 +41,16 @@ const s = {
   banner: {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     gap: 8, padding: '9px 20px',
-    backgroundColor: '#fdf4f5', borderBottom: '1px solid #EDBFC6',
+    backgroundColor: '#FFE6ED', borderBottom: '1px solid rgba(138,35,35,0.2)',
     textDecoration: 'none',
   },
   heart: { fontSize: 13, flexShrink: 0 },
   text: {
-    fontFamily: F.sans, fontSize: 12, color: CHARCOAL,
+    fontFamily: F.sans, fontSize: 12, color: INK,
     lineHeight: 1.4, textAlign: 'center',
   },
-  main: { color: CHARCOAL },
+  main: { color: INK },
   org: { color: WINE, fontWeight: 600 },
-  counter: { color: '#777' },
-  arrow: { fontSize: 11, color: '#aaa', flexShrink: 0 },
+  counter: { color: '#7A6A5A' },
+  arrow: { fontSize: 11, color: '#7A6A5A', flexShrink: 0 },
 }

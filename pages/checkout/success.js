@@ -4,11 +4,13 @@ import Head from 'next/head'
 import SiteNav from '../../components/SiteNav'
 import SiteFooter from '../../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function CheckoutSuccess() {
   const router = useRouter()
@@ -83,7 +85,7 @@ export default function CheckoutSuccess() {
                 <span style={ss.donationHeart}>💛</span>
                 <p style={ss.donationText}>
                   Your purchase includes a{' '}
-                  <strong style={{ color: ss.donationStrong.color }}>
+                  <strong style={{ color: '#92400e' }}>
                     ${+(order.total * 0.05).toFixed(2)}
                   </strong>{' '}
                   donation to the{' '}
@@ -119,43 +121,42 @@ const ss = {
   page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
   body: { maxWidth: 560, margin: '0 auto', padding: '40px 16px 80px' },
   card: {
-    backgroundColor: '#fff', borderRadius: 16,
+    backgroundColor: CREAM, borderRadius: 10,
     padding: '40px 32px', textAlign: 'center',
-    boxShadow: '0 8px 40px rgba(149,35,35,0.08)',
-    border: `1px solid ${BLUSH}`,
+    border: `1px solid ${BORDER}`,
   },
   iconWrap: { fontSize: 48, marginBottom: 16 },
   title: {
-    fontFamily: F.serif, fontSize: 28, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 12px',
+    fontFamily: F.serif, fontSize: 28, fontWeight: 600,
+    color: MAROON, margin: '0 0 12px',
   },
   subtitle: {
-    fontFamily: F.sans, fontSize: 15, color: '#666',
+    fontFamily: F.sans, fontSize: 15, color: MUTED,
     lineHeight: 1.7, margin: '0 0 4px',
   },
-  divider: { borderTop: `1px solid ${BLUSH}`, margin: '24px 0' },
+  divider: { borderTop: `1px solid ${BORDER}`, margin: '24px 0' },
   sectionLabel: {
-    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: '#888',
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: MUTED,
     textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 14px', textAlign: 'left',
   },
   itemList: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 },
   item: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-    backgroundColor: CREAM, borderRadius: 8, padding: '14px 16px', gap: 12,
+    backgroundColor: 'rgba(77,0,0,0.04)', borderRadius: 8, padding: '14px 16px', gap: 12,
   },
   itemLeft: { flex: 1, textAlign: 'left' },
-  itemTitle: { fontFamily: F.sans, fontSize: 14, fontWeight: 700, color: CHARCOAL, margin: '0 0 4px' },
-  itemDate: { fontFamily: F.sans, fontSize: 12, color: '#666', margin: '0 0 2px' },
-  itemYears: { fontFamily: F.sans, fontSize: 11, color: '#aaa', margin: 0 },
+  itemTitle: { fontFamily: F.sans, fontSize: 14, fontWeight: 700, color: INK, margin: '0 0 4px' },
+  itemDate: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '0 0 2px' },
+  itemYears: { fontFamily: F.sans, fontSize: 11, color: MUTED, margin: 0 },
   itemPrice: { fontFamily: F.sans, fontSize: 16, fontWeight: 700, color: WINE, margin: 0, flexShrink: 0 },
   totalRow: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: `${BLUSH}44`, borderRadius: 8, padding: '14px 16px',
+    backgroundColor: 'rgba(77,0,0,0.06)', borderRadius: 8, padding: '14px 16px',
   },
-  totalLabel: { fontFamily: F.sans, fontSize: 14, color: CHARCOAL, fontWeight: 700 },
+  totalLabel: { fontFamily: F.sans, fontSize: 14, color: INK, fontWeight: 700 },
   totalAmount: { fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE },
   emailNote: {
-    fontFamily: F.sans, fontSize: 13, color: '#888', margin: '0 0 20px', lineHeight: 1.5,
+    fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 20px', lineHeight: 1.5,
   },
   donationBox: {
     display: 'flex', alignItems: 'flex-start', gap: 10,
@@ -164,12 +165,11 @@ const ss = {
   },
   donationHeart: { fontSize: 16, flexShrink: 0, marginTop: 1 },
   donationText: {
-    fontFamily: F.sans, fontSize: 13, color: '#555', margin: 0, lineHeight: 1.6,
+    fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.6,
   },
-  donationStrong: { color: '#92400e' },
-  npcfLink: { color: '#952323', fontWeight: 600, textDecoration: 'none' },
+  npcfLink: { color: WINE, fontWeight: 600, textDecoration: 'none' },
   dashBtn: {
-    width: '100%', padding: 14, backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
+    width: '100%', padding: 14, backgroundColor: WINE, color: CREAM,
+    border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
   },
 }

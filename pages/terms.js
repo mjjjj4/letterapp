@@ -2,11 +2,11 @@ import Head from 'next/head'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const CREAM = '#FFFBF5'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 const sections = [
   {
@@ -77,10 +77,10 @@ export default function Terms() {
 
 const s = {
   main: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM, maxWidth: 680, margin: '0 auto', padding: '60px 24px 80px' },
-  title: { fontFamily: F.serif, fontSize: 38, color: CHARCOAL, marginBottom: 10 },
-  updated: { fontFamily: F.sans, fontSize: 13, color: '#999', marginBottom: 40 },
+  title: { fontFamily: F.serif, fontSize: 38, fontWeight: 600, color: MAROON, marginBottom: 10 },
+  updated: { fontFamily: F.sans, fontSize: 13, color: MUTED, marginBottom: 40 },
   sections: { display: 'flex', flexDirection: 'column', gap: 32 },
   section: {},
-  h2: { fontFamily: F.serif, fontSize: 20, color: CHARCOAL, marginBottom: 10 },
-  p: { fontFamily: F.sans, fontSize: 15, color: '#555', lineHeight: 1.9 },
+  h2: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: MAROON, marginBottom: 10 },
+  p: { fontFamily: F.sans, fontSize: 15, color: INK, lineHeight: 1.9 },
 }

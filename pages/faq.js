@@ -4,11 +4,13 @@ import Head from 'next/head'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 const faqs = [
   {
@@ -48,7 +50,7 @@ const faqs = [
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ borderBottom: `1px solid ${BLUSH}` }}>
+    <div style={{ borderBottom: `1px solid ${BORDER}` }}>
       <button onClick={() => setOpen(o => !o)} style={s.question}>
         <span>{q}</span>
         <span style={{ ...s.chevron, transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
@@ -102,40 +104,40 @@ const s = {
     fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
     textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 12,
   },
-  title: { fontFamily: F.serif, fontSize: 42, color: CHARCOAL, marginBottom: 14 },
-  sub: { fontFamily: F.sans, fontSize: 17, color: '#666', lineHeight: 1.6 },
+  title: { fontFamily: F.serif, fontSize: 42, fontWeight: 600, color: MAROON, marginBottom: 14 },
+  sub: { fontFamily: F.sans, fontSize: 17, color: MUTED, lineHeight: 1.6 },
 
   list: {
-    backgroundColor: '#fff', borderRadius: 12,
-    border: `1px solid ${BLUSH}`, overflow: 'hidden', marginBottom: 40,
+    backgroundColor: CREAM, borderRadius: 10,
+    border: `1px solid ${BORDER}`, overflow: 'hidden', marginBottom: 40,
   },
   question: {
     width: '100%', display: 'flex', justifyContent: 'space-between',
     alignItems: 'center', padding: '20px 24px',
     backgroundColor: 'transparent', border: 'none',
-    fontFamily: F.sans, fontSize: 16, fontWeight: 600, color: CHARCOAL,
+    fontFamily: F.sans, fontSize: 16, fontWeight: 600, color: INK,
     textAlign: 'left', gap: 16,
   },
   chevron: {
-    fontFamily: F.sans, fontSize: 18, color: '#aaa',
+    fontFamily: F.sans, fontSize: 18, color: MUTED,
     flexShrink: 0, transition: 'transform 0.2s',
   },
   answer: {
     fontFamily: F.sans, padding: '0 24px 20px',
-    fontSize: 15, color: '#555', lineHeight: 1.8,
+    fontSize: 15, color: INK, lineHeight: 1.8,
   },
 
   contact: {
     textAlign: 'center', padding: '32px',
-    backgroundColor: '#fff', borderRadius: 12,
-    border: `1px solid ${BLUSH}`, marginBottom: 40,
+    backgroundColor: CREAM, borderRadius: 10,
+    border: `1px solid ${BORDER}`, marginBottom: 40,
   },
-  contactText: { fontFamily: F.sans, fontSize: 16, color: '#888', marginBottom: 10 },
+  contactText: { fontFamily: F.sans, fontSize: 16, color: MUTED, marginBottom: 10 },
   contactLink: { fontFamily: F.sans, fontSize: 17, color: WINE, textDecoration: 'none', fontWeight: 600 },
 
   cta: { textAlign: 'center' },
   ctaBtn: {
-    padding: '14px 36px', backgroundColor: WINE, color: '#fff',
+    padding: '14px 36px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
 }

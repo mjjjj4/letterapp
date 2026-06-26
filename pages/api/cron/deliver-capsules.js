@@ -19,17 +19,17 @@ function deliveryEmailHtml(capsule) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Your capsule has arrived</title>
 </head>
-<body style="margin:0;padding:0;background:#FFE6E1;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFE6E1;padding:48px 0;">
+<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #EDBFC6;">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
 
           <!-- Header -->
           <tr>
             <td style="padding:48px 48px 32px;text-align:center;">
-              <p style="margin:0 0 20px;font-size:13px;letter-spacing:3px;color:#952323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter</p>
-              <h1 style="margin:0;font-size:30px;color:#393232;font-weight:normal;line-height:1.4;">
+              <p style="margin:0 0 20px;font-size:13px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter</p>
+              <h1 style="margin:0;font-size:30px;color:#4D0000;font-weight:normal;line-height:1.4;">
                 A message from your past self<br/>has arrived.
               </h1>
             </td>
@@ -40,8 +40,8 @@ function deliveryEmailHtml(capsule) {
             <td style="padding:0 48px 32px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:#FFE6E1;border-left:3px solid #952323;border-radius:4px;padding:18px 22px;">
-                    <p style="margin:0;font-size:18px;color:#393232;font-style:italic;">&ldquo;${capsule.title}&rdquo;</p>
+                  <td style="background:#F5E8E8;border-left:3px solid #8A2323;border-radius:4px;padding:18px 22px;">
+                    <p style="margin:0;font-size:18px;color:#3A2418;font-style:italic;">&ldquo;${capsule.title}&rdquo;</p>
                   </td>
                 </tr>
               </table>
@@ -51,16 +51,16 @@ function deliveryEmailHtml(capsule) {
           <!-- Body -->
           <tr>
             <td style="padding:0 48px 40px;text-align:center;">
-              <p style="margin:0 0 36px;font-size:17px;color:#555;line-height:1.8;">
+              <p style="margin:0 0 36px;font-size:17px;color:#3A2418;line-height:1.8;">
                 You wrote this for the person you are today.<br/>Take a moment, then open it.
               </p>
 
               <!-- CTA button -->
               <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
-                  <td style="background:#952323;border-radius:8px;text-align:center;">
+                  <td style="background:#8A2323;border-radius:8px;text-align:center;">
                     <a href="${APP_URL}/capsule/${capsule.id}"
-                       style="display:inline-block;padding:18px 48px;font-size:16px;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.5px;">
+                       style="display:inline-block;padding:18px 48px;font-size:16px;color:#FFFBF5;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;letter-spacing:0.5px;">
                       Open My Capsule
                     </a>
                   </td>
@@ -71,8 +71,8 @@ function deliveryEmailHtml(capsule) {
 
           <!-- Footer -->
           <tr>
-            <td style="background:#fdf8f7;padding:24px 48px;border-top:1px solid #EDBFC6;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#aaa;line-height:1.8;font-family:Arial,sans-serif;">
+            <td style="background:#FFFBF5;padding:24px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
+              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
                 The Letter &mdash; Time capsules for your future self.
               </p>
             </td>

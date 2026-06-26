@@ -3,11 +3,13 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import SignupModal from './SignupModal'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function SiteNav({ onSignUp }) {
   const router = useRouter()
@@ -134,37 +136,36 @@ const n = {
     position: 'sticky', top: 0, left: 0, right: 0, zIndex: 1000,
     height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0 28px',
-    backgroundColor: 'rgba(255,230,225,0.97)',
-    backdropFilter: 'blur(12px)',
-    borderBottom: '1px solid rgba(237,191,198,0.5)',
+    backgroundColor: MAROON,
   },
   logo: {
-    fontFamily: F.serif, fontSize: 22, fontWeight: 700, color: WINE,
+    fontFamily: F.serif, fontSize: 22, fontWeight: 600, color: CREAM,
     cursor: 'pointer', letterSpacing: '0.3px', userSelect: 'none',
   },
   signUpBtn: {
-    padding: '9px 22px', backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
+    padding: '9px 22px', backgroundColor: WINE, color: CREAM,
+    border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
   },
   ghostBtn: {
-    padding: '8px 18px', backgroundColor: 'transparent', color: CHARCOAL,
-    border: `1.5px solid ${BLUSH}`, borderRadius: 6,
+    padding: '8px 18px', backgroundColor: 'transparent', color: CREAM,
+    border: '1.5px solid rgba(255,251,245,0.3)', borderRadius: 8,
     fontSize: 14, fontWeight: 500, fontFamily: F.sans,
   },
   cartBtn: {
-    padding: '8px 16px', backgroundColor: 'transparent', color: WINE,
-    border: `1.5px solid ${WINE}`, borderRadius: 6,
+    padding: '8px 16px', backgroundColor: 'transparent', color: CREAM,
+    border: '1.5px solid rgba(255,251,245,0.3)', borderRadius: 8,
     fontSize: 13, fontWeight: 600, fontFamily: F.sans,
   },
   signInLink: {
-    fontSize: 14, color: CHARCOAL, cursor: 'pointer',
+    fontSize: 14, color: CREAM, cursor: 'pointer',
     fontFamily: F.sans, fontWeight: 500, userSelect: 'none',
+    opacity: 0.8,
   },
   hamburger: {
     display: 'flex', flexDirection: 'column', gap: 5,
     background: 'transparent', border: 'none', padding: 6,
   },
-  bar: { display: 'block', width: 24, height: 2, backgroundColor: CHARCOAL, borderRadius: 2 },
+  bar: { display: 'block', width: 24, height: 2, backgroundColor: CREAM, borderRadius: 2 },
 }
 
 const mn = {
@@ -174,17 +175,17 @@ const mn = {
   drawer: {
     position: 'absolute', top: 0, right: 0, bottom: 0, width: 300,
     backgroundColor: CREAM,
-    boxShadow: '-4px 0 24px rgba(57,50,50,0.15)',
+    boxShadow: '-4px 0 24px rgba(77,0,0,0.15)',
     display: 'flex', flexDirection: 'column',
   },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     padding: '20px 20px 16px',
-    borderBottom: `1px solid ${BLUSH}`,
+    borderBottom: `1px solid ${BORDER}`,
   },
-  brand: { fontFamily: F.serif, fontSize: 20, fontWeight: 700, color: WINE },
+  brand: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: MAROON },
   closeBtn: {
-    background: 'transparent', border: 'none', fontSize: 20, color: '#999',
+    background: 'transparent', border: 'none', fontSize: 20, color: MUTED,
   },
   body: {
     display: 'flex', flexDirection: 'column', padding: '20px',
@@ -192,35 +193,35 @@ const mn = {
   },
   signUpBtn: {
     width: '100%', padding: '14px',
-    backgroundColor: WINE, color: '#fff', border: 'none',
+    backgroundColor: WINE, color: CREAM, border: 'none',
     borderRadius: 8, fontSize: 16, fontWeight: 600,
     fontFamily: F.sans, textAlign: 'center', marginBottom: 4,
   },
   signInLink: {
-    display: 'block', fontSize: 16, color: CHARCOAL,
+    display: 'block', fontSize: 16, color: INK,
     textDecoration: 'none', padding: '12px 0',
-    borderBottom: `1px solid ${BLUSH}`, fontFamily: F.sans, fontWeight: 500,
+    borderBottom: `1px solid ${BORDER}`, fontFamily: F.sans, fontWeight: 500,
   },
   primaryLink: {
     display: 'block', fontSize: 16, fontWeight: 600, color: WINE,
     textDecoration: 'none', padding: '12px 0',
-    borderBottom: `1px solid ${BLUSH}`, fontFamily: F.sans,
+    borderBottom: `1px solid ${BORDER}`, fontFamily: F.sans,
   },
-  divider: { height: 1, backgroundColor: BLUSH, margin: '8px 0' },
+  divider: { height: 1, backgroundColor: BORDER, margin: '8px 0' },
   link: {
-    fontSize: 15, color: CHARCOAL, textDecoration: 'none',
-    padding: '11px 0', borderBottom: `1px solid rgba(237,191,198,0.5)`,
+    fontSize: 15, color: INK, textDecoration: 'none',
+    padding: '11px 0', borderBottom: `1px solid rgba(77,0,0,0.08)`,
     fontFamily: F.sans,
   },
   linkSmall: {
-    fontSize: 13, color: '#888', textDecoration: 'none',
-    padding: '10px 0', borderBottom: `1px solid rgba(237,191,198,0.3)`,
+    fontSize: 13, color: MUTED, textDecoration: 'none',
+    padding: '10px 0', borderBottom: `1px solid rgba(77,0,0,0.06)`,
     fontFamily: F.sans,
   },
   signOutBtn: {
     width: '100%', padding: '12px',
-    backgroundColor: 'transparent', color: '#888',
-    border: `1px solid ${BLUSH}`, borderRadius: 8,
+    backgroundColor: 'transparent', color: MUTED,
+    border: `1px solid ${BORDER}`, borderRadius: 8,
     fontSize: 14, fontFamily: F.sans, textAlign: 'center',
   },
 }

@@ -129,9 +129,9 @@ export default async function handler(req, res) {
       const capsuleRows = succeeded
         .map(r => `
           <tr>
-            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#333;">${r.title}</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#555;text-align:right;">${formatDate(r.deliveryDate)}</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;font-weight:bold;color:#333;text-align:right;">$${r.price.toFixed(2)}</td>
+            <td style="padding:10px 0;border-bottom:1px solid rgba(77,0,0,0.12);font-size:14px;color:#3A2418;">${r.title}</td>
+            <td style="padding:10px 0;border-bottom:1px solid rgba(77,0,0,0.12);font-size:14px;color:#7A6A5A;text-align:right;">${formatDate(r.deliveryDate)}</td>
+            <td style="padding:10px 0;border-bottom:1px solid rgba(77,0,0,0.12);font-size:14px;font-weight:bold;color:#3A2418;text-align:right;">$${r.price.toFixed(2)}</td>
           </tr>`)
         .join('')
 
@@ -142,9 +142,9 @@ export default async function handler(req, res) {
           ? `Your capsule "${succeeded[0].title}" is sealed 🔒`
           : `${succeeded.length} capsules sealed 🔒`,
         html: `
-          <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;color:#333;">
-            <h2 style="font-size:22px;margin:0 0 8px;color:#393232;">Your capsule${succeeded.length !== 1 ? 's are' : ' is'} sealed 🔒</h2>
-            <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
+          <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;color:#3A2418;background:#FFFBF5;padding:32px;">
+            <h2 style="font-size:22px;margin:0 0 8px;color:#4D0000;">Your capsule${succeeded.length !== 1 ? 's are' : ' is'} sealed 🔒</h2>
+            <p style="font-size:15px;color:#7A6A5A;line-height:1.6;margin:0 0 24px;">
               ${succeeded.length === 1
                 ? `We'll deliver <strong>${succeeded[0].title}</strong> to your inbox on <strong>${formatDate(succeeded[0].deliveryDate)}</strong>.`
                 : `We'll deliver each one to your inbox on the dates below.`}
@@ -153,9 +153,9 @@ export default async function handler(req, res) {
             <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
               <thead>
                 <tr>
-                  <th style="text-align:left;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Capsule</th>
-                  <th style="text-align:right;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Delivery Date</th>
-                  <th style="text-align:right;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Cost</th>
+                  <th style="text-align:left;font-size:11px;color:#7A6A5A;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Capsule</th>
+                  <th style="text-align:right;font-size:11px;color:#7A6A5A;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Delivery Date</th>
+                  <th style="text-align:right;font-size:11px;color:#7A6A5A;text-transform:uppercase;letter-spacing:0.8px;padding-bottom:8px;">Cost</th>
                 </tr>
               </thead>
               <tbody>${capsuleRows}</tbody>
@@ -163,11 +163,11 @@ export default async function handler(req, res) {
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
               <tr>
-                <td style="background:#fdf4f5;border-radius:8px;padding:14px 16px;">
+                <td style="background:rgba(77,0,0,0.06);border-radius:8px;padding:14px 16px;border:1px solid rgba(77,0,0,0.15);">
                   <table style="width:100%;">
                     <tr>
-                      <td style="font-size:14px;color:#393232;font-weight:bold;">Total charged</td>
-                      <td style="font-size:18px;color:#952323;font-weight:bold;text-align:right;">$${total.toFixed(2)}</td>
+                      <td style="font-size:14px;color:#3A2418;font-weight:bold;">Total charged</td>
+                      <td style="font-size:18px;color:#8A2323;font-weight:bold;text-align:right;">$${total.toFixed(2)}</td>
                     </tr>
                   </table>
                 </td>
@@ -177,16 +177,16 @@ export default async function handler(req, res) {
             <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
               <tr>
                 <td style="background:#fffbeb;border-radius:8px;padding:14px 16px;border-left:3px solid #f59e0b;">
-                  <p style="font-size:13px;color:#555;margin:0;line-height:1.6;">
-                    💛 Your purchase includes a <strong style="color:#393232;">$${totalDonation.toFixed(2)}</strong> donation to the
-                    <a href="https://nationalpcf.org" style="color:#952323;text-decoration:none;font-weight:600;">National Pediatric Cancer Foundation</a>,
+                  <p style="font-size:13px;color:#7A6A5A;margin:0;line-height:1.6;">
+                    💛 Your purchase includes a <strong style="color:#3A2418;">$${totalDonation.toFixed(2)}</strong> donation to the
+                    <a href="https://nationalpcf.org" style="color:#8A2323;text-decoration:none;font-weight:600;">National Pediatric Cancer Foundation</a>,
                     funding research for safer, less toxic childhood cancer treatments.
                   </p>
                 </td>
               </tr>
             </table>
 
-            <p style="font-size:13px;color:#888;line-height:1.6;margin:0;">
+            <p style="font-size:13px;color:#7A6A5A;line-height:1.6;margin:0;">
               — The Letter Team
             </p>
           </div>

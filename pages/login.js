@@ -5,11 +5,13 @@ import { supabase } from '../lib/supabase'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Login() {
   const router = useRouter()
@@ -92,29 +94,28 @@ const s = {
     backgroundColor: CREAM, padding: '40px 20px',
   },
   card: {
-    backgroundColor: '#fff', borderRadius: 16,
+    backgroundColor: CREAM, borderRadius: 10,
     padding: '44px 40px', width: '100%', maxWidth: 420,
-    boxShadow: '0 8px 40px rgba(149,35,35,0.08)',
-    border: `1px solid ${BLUSH}`,
+    border: `1px solid ${BORDER}`,
   },
   icon: { fontSize: 36, textAlign: 'center', marginBottom: 16 },
   title: {
-    fontFamily: F.serif, fontSize: 28, fontWeight: 700,
-    color: CHARCOAL, textAlign: 'center', marginBottom: 8,
+    fontFamily: F.serif, fontSize: 28, fontWeight: 600,
+    color: MAROON, textAlign: 'center', marginBottom: 8,
   },
   sub: {
-    fontFamily: F.sans, fontSize: 14, color: '#888',
+    fontFamily: F.sans, fontSize: 14, color: MUTED,
     textAlign: 'center', lineHeight: 1.5, marginBottom: 28,
   },
   form: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: {
     fontFamily: F.sans, fontSize: 13, fontWeight: 600,
-    color: CHARCOAL, marginTop: 14, marginBottom: 6,
+    color: INK, marginTop: 14, marginBottom: 6,
   },
   input: {
     width: '100%', padding: '12px 14px',
-    border: `1.5px solid ${BLUSH}`, borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, outline: 'none', backgroundColor: '#fff',
+    border: `1.5px solid ${BORDER}`, borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, outline: 'none', backgroundColor: CREAM,
     transition: 'border-color 0.15s',
   },
   error: {
@@ -124,12 +125,12 @@ const s = {
   },
   btn: {
     marginTop: 22, padding: 14, width: '100%',
-    backgroundColor: WINE, color: '#fff', border: 'none',
+    backgroundColor: WINE, color: CREAM, border: 'none',
     borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
   footer: {
     textAlign: 'center', marginTop: 20,
-    fontSize: 14, color: '#888', fontFamily: F.sans,
+    fontSize: 14, color: MUTED, fontFamily: F.sans,
   },
   footerLink: { color: WINE, fontWeight: 600, textDecoration: 'none' },
 }

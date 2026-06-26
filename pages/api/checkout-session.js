@@ -44,9 +44,9 @@ function formatDate(ds) {
 function founderPromoEmailHtml(capsules, appUrl) {
   const capsuleList = capsules
     .map(c => `
-      <div style="background:#FFE6E1;border-left:3px solid #952323;border-radius:4px;padding:14px 18px;margin-bottom:10px;">
-        <p style="margin:0 0 4px;font-size:16px;color:#393232;font-weight:bold;">${c.title}</p>
-        <p style="margin:0;font-size:13px;color:#666;">Opens ${formatDate(c.deliveryDate)}</p>
+      <div style="background:#F5E8E8;border-left:3px solid #8A2323;border-radius:4px;padding:14px 18px;margin-bottom:10px;">
+        <p style="margin:0 0 4px;font-size:16px;color:#3A2418;font-weight:bold;">${c.title}</p>
+        <p style="margin:0;font-size:13px;color:#7A6A5A;">Opens ${formatDate(c.deliveryDate)}</p>
       </div>`)
     .join('')
 
@@ -54,18 +54,18 @@ function founderPromoEmailHtml(capsules, appUrl) {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FFE6E1;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFE6E1;padding:48px 0;">
+<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #EDBFC6;">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
           <tr>
             <td style="padding:48px 48px 24px;text-align:center;">
-              <p style="margin:0 0 12px;font-size:12px;letter-spacing:3px;color:#952323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter &mdash; Founder Promotion</p>
-              <h1 style="margin:0 0 14px;font-size:26px;color:#393232;font-weight:normal;line-height:1.4;">
+              <p style="margin:0 0 12px;font-size:12px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter &mdash; Founder Promotion</p>
+              <h1 style="margin:0 0 14px;font-size:26px;color:#4D0000;font-weight:normal;line-height:1.4;">
                 Your capsule${capsules.length !== 1 ? 's are' : ' is'} sealed &mdash; free. 🎉
               </h1>
-              <p style="margin:0;font-size:15px;color:#666;line-height:1.7;font-family:Arial,sans-serif;">
+              <p style="margin:0;font-size:15px;color:#7A6A5A;line-height:1.7;font-family:Arial,sans-serif;">
                 Thank you for being an early member of The Letter. Your capsule will arrive in your inbox when the time comes.
               </p>
             </td>
@@ -75,14 +75,14 @@ function founderPromoEmailHtml(capsules, appUrl) {
           </tr>
           <tr>
             <td style="padding:0 48px 40px;text-align:center;">
-              <p style="margin:0 0 28px;font-size:15px;color:#555;line-height:1.8;font-family:Arial,sans-serif;">
+              <p style="margin:0 0 28px;font-size:15px;color:#3A2418;line-height:1.8;font-family:Arial,sans-serif;">
                 As a Founder member, you sealed this capsule free as part of our early access program. Your feedback means everything to us.
               </p>
               <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
-                  <td style="background:#952323;border-radius:8px;text-align:center;">
+                  <td style="background:#8A2323;border-radius:8px;text-align:center;">
                     <a href="${appUrl}/dashboard"
-                       style="display:inline-block;padding:16px 40px;font-size:15px;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;">
+                       style="display:inline-block;padding:16px 40px;font-size:15px;color:#FFFBF5;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;">
                       View your capsules
                     </a>
                   </td>
@@ -91,8 +91,8 @@ function founderPromoEmailHtml(capsules, appUrl) {
             </td>
           </tr>
           <tr>
-            <td style="background:#fdf8f7;padding:20px 48px;border-top:1px solid #EDBFC6;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#aaa;line-height:1.8;font-family:Arial,sans-serif;">
+            <td style="background:#FFFBF5;padding:20px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
+              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
                 The Letter &mdash; Time capsules for your future self.
               </p>
             </td>

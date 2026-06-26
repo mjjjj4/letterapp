@@ -6,11 +6,13 @@ import { loadCart, saveCart } from '../lib/cart'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Dashboard() {
   const router = useRouter()
@@ -73,7 +75,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CREAM }}>
-        <p style={{ fontFamily: F.sans, fontSize: 16, color: '#888' }}>Loading…</p>
+        <p style={{ fontFamily: F.sans, fontSize: 16, color: MUTED }}>Loading…</p>
       </div>
     )
   }
@@ -276,12 +278,12 @@ const s = {
     marginBottom: 32, flexWrap: 'wrap', gap: 12,
   },
   welcomeLabel: {
-    fontFamily: F.sans, fontSize: 11, color: '#888', margin: '0 0 2px',
+    fontFamily: F.sans, fontSize: 11, color: MUTED, margin: '0 0 2px',
     textTransform: 'uppercase', letterSpacing: '0.8px',
   },
-  welcomeEmail: { fontFamily: F.sans, fontSize: 15, color: CHARCOAL, margin: 0, fontWeight: 600 },
+  welcomeEmail: { fontFamily: F.sans, fontSize: 15, color: INK, margin: 0, fontWeight: 600 },
   newBtn: {
-    padding: '10px 20px', backgroundColor: WINE, color: '#fff',
+    padding: '10px 20px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
     fontFamily: F.sans, whiteSpace: 'nowrap',
   },
@@ -289,45 +291,44 @@ const s = {
   section: { marginBottom: 40 },
   sectionHeading: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 },
   sectionTitle: {
-    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: '#888',
+    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: MUTED,
     textTransform: 'uppercase', letterSpacing: '1px',
   },
   sectionCount: {
-    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: '#888',
-    backgroundColor: `${BLUSH}55`, padding: '2px 10px', borderRadius: 20,
+    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: MUTED,
+    backgroundColor: 'rgba(77,0,0,0.08)', padding: '2px 10px', borderRadius: 20,
   },
   cardList: { display: 'flex', flexDirection: 'column', gap: 12 },
 
   emptyCard: {
-    backgroundColor: '#fff', border: `2px dashed ${BLUSH}`,
-    borderRadius: 12, padding: '40px 24px', textAlign: 'center',
+    backgroundColor: CREAM, border: `2px dashed ${BORDER}`,
+    borderRadius: 10, padding: '40px 24px', textAlign: 'center',
   },
   emptyIcon: { fontSize: 36, margin: '0 0 12px' },
   emptyHeadline: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 8px',
+    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
+    color: MAROON, margin: '0 0 8px',
   },
   emptyBody: {
-    fontFamily: F.sans, fontSize: 14, color: '#888',
+    fontFamily: F.sans, fontSize: 14, color: MUTED,
     margin: '0 auto 24px', lineHeight: 1.6, maxWidth: 320,
   },
   emptyBtn: {
-    padding: '12px 24px', backgroundColor: WINE, color: '#fff',
+    padding: '12px 24px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600,
     fontFamily: F.sans,
   },
 
   draftCard: {
-    backgroundColor: '#fff',
-    border: `1px solid ${BLUSH}`, borderLeft: `4px solid ${WINE}`,
-    borderRadius: 12, padding: 20,
-    boxShadow: '0 2px 10px rgba(149,35,35,0.06)',
+    backgroundColor: CREAM,
+    border: `1px solid ${BORDER}`, borderLeft: `4px solid ${WINE}`,
+    borderRadius: 10, padding: 20,
   },
   draftTop: { marginBottom: 14 },
   badgeRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 },
   draftBadge: {
     fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE,
-    backgroundColor: `${BLUSH}55`, padding: '3px 10px', borderRadius: 20,
+    backgroundColor: 'rgba(77,0,0,0.08)', padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   inCartBadge: {
@@ -335,17 +336,17 @@ const s = {
     backgroundColor: '#d1fae5', padding: '3px 10px', borderRadius: 20,
   },
   cardTitle: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 700,
-    color: CHARCOAL, margin: 0, lineHeight: 1.3, wordBreak: 'break-word',
+    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
+    color: INK, margin: 0, lineHeight: 1.3, wordBreak: 'break-word',
   },
   messagePreview: {
-    fontFamily: F.serif, fontSize: 14, color: '#666',
+    fontFamily: F.sans, fontSize: 14, color: MUTED,
     lineHeight: 1.75, margin: '0 0 20px',
-    fontStyle: 'italic', borderLeft: `3px solid ${BLUSH}`, paddingLeft: 14,
+    fontStyle: 'italic', borderLeft: `3px solid ${BORDER}`, paddingLeft: 14,
   },
   draftActions: { display: 'flex', gap: 10 },
   sealBtn: {
-    flex: 1, padding: 13, backgroundColor: WINE, color: '#fff',
+    flex: 1, padding: 13, backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
   },
   viewCartBtn: {
@@ -353,17 +354,17 @@ const s = {
     border: `1.5px solid ${WINE}`, borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
   },
   editBtn: {
-    padding: '13px 20px', backgroundColor: '#fff', color: CHARCOAL,
-    border: `1px solid ${BLUSH}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
+    padding: '13px 20px', backgroundColor: CREAM, color: INK,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
   },
   deleteBtn: {
-    padding: '13px 14px', backgroundColor: '#fff', color: '#dc2626',
+    padding: '13px 14px', backgroundColor: CREAM, color: '#dc2626',
     border: '1px solid #fecaca', borderRadius: 8, fontSize: 15, lineHeight: 1,
   },
 
   sealedCard: {
-    backgroundColor: '#f9f6f4', border: `1px solid ${BLUSH}`,
-    borderRadius: 12, padding: '18px 20px', opacity: 0.8,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderRadius: 10, padding: '18px 20px', opacity: 0.8,
   },
   sealedInner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   sealedLeft: { flex: 1 },
@@ -376,18 +377,18 @@ const s = {
   },
   founderBadge: {
     fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE,
-    backgroundColor: `${BLUSH}55`, padding: '3px 10px', borderRadius: 20,
+    backgroundColor: 'rgba(77,0,0,0.08)', padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   sealedTitle: {
-    fontFamily: F.serif, fontSize: 17, fontWeight: 700,
-    color: '#555', margin: '0 0 4px', wordBreak: 'break-word',
+    fontFamily: F.serif, fontSize: 17, fontWeight: 600,
+    color: MUTED, margin: '0 0 4px', wordBreak: 'break-word',
   },
-  sealedDate: { fontFamily: F.sans, fontSize: 13, color: '#888', margin: '0 0 4px' },
+  sealedDate: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 4px' },
   sealedHint: { fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: 0, fontStyle: 'italic' },
   viewSealedBtn: {
-    padding: '10px 18px', backgroundColor: 'transparent', color: '#888',
-    border: `1px solid ${BLUSH}`, borderRadius: 8, fontSize: 13, fontFamily: F.sans, whiteSpace: 'nowrap',
+    padding: '10px 18px', backgroundColor: 'transparent', color: MUTED,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, fontFamily: F.sans, whiteSpace: 'nowrap',
   },
 
   deliveredBanner: {
@@ -398,9 +399,8 @@ const s = {
   deliveredBannerIcon: { fontSize: 20, flexShrink: 0 },
   deliveredBannerText: { fontFamily: F.sans, fontSize: 14, color: '#166534', lineHeight: 1.4 },
   deliveredCard: {
-    backgroundColor: '#fff', border: '1px solid #d1fae5',
-    borderLeft: '4px solid #10b981', borderRadius: 12, padding: 20,
-    boxShadow: '0 1px 4px rgba(16,185,129,0.08)',
+    backgroundColor: CREAM, border: '1px solid #d1fae5',
+    borderLeft: '4px solid #10b981', borderRadius: 10, padding: 20,
   },
   deliveredHeader: {
     display: 'flex', justifyContent: 'space-between',
@@ -413,10 +413,10 @@ const s = {
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   deliveredTitle: {
-    fontFamily: F.serif, fontSize: 18, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 4px', wordBreak: 'break-word',
+    fontFamily: F.serif, fontSize: 18, fontWeight: 600,
+    color: INK, margin: '0 0 4px', wordBreak: 'break-word',
   },
-  deliveredDate: { fontFamily: F.sans, fontSize: 13, color: '#888', margin: 0 },
+  deliveredDate: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
   viewDeliveredBtn: {
     padding: '10px 18px', backgroundColor: '#10b981', color: '#fff',
     border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
@@ -424,7 +424,7 @@ const s = {
   },
   deliveredMessageBox: { borderLeft: '3px solid #6ee7b7', paddingLeft: 14, marginBottom: 16 },
   deliveredMessage: {
-    fontFamily: F.serif, fontSize: 15, color: '#333',
+    fontFamily: F.serif, fontSize: 15, color: INK,
     lineHeight: 1.8, margin: 0, fontStyle: 'italic',
     whiteSpace: 'pre-wrap', wordBreak: 'break-word',
   },

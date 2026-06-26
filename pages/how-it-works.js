@@ -3,11 +3,13 @@ import Head from 'next/head'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 const steps = [
   {
@@ -88,29 +90,29 @@ const s = {
     fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
     textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 12,
   },
-  title: { fontFamily: F.serif, fontSize: 42, color: CHARCOAL, marginBottom: 16 },
-  sub: { fontFamily: F.sans, fontSize: 18, color: '#666', lineHeight: 1.6 },
+  title: { fontFamily: F.serif, fontSize: 42, fontWeight: 600, color: MAROON, marginBottom: 16 },
+  sub: { fontFamily: F.sans, fontSize: 18, color: MUTED, lineHeight: 1.6 },
 
   steps: { display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 64 },
   step: { display: 'flex', gap: 24, paddingBottom: 0 },
   stepLeft: { display: 'flex', flexDirection: 'column', alignItems: 'center', width: 48, flexShrink: 0 },
   stepNum: {
-    width: 48, height: 48, backgroundColor: WINE, color: '#fff',
+    width: 48, height: 48, backgroundColor: WINE, color: CREAM,
     borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontFamily: F.sans, fontSize: 14, fontWeight: 700, flexShrink: 0,
   },
-  connector: { width: 2, flex: 1, backgroundColor: BLUSH, minHeight: 40, margin: '8px 0' },
+  connector: { width: 2, flex: 1, backgroundColor: BORDER, minHeight: 40, margin: '8px 0' },
   stepRight: { paddingBottom: 48, flex: 1 },
   stepIcon: { fontSize: 28, marginBottom: 10 },
-  stepTitle: { fontFamily: F.serif, fontSize: 22, color: CHARCOAL, marginBottom: 10 },
-  stepBody: { fontFamily: F.sans, fontSize: 16, color: '#555', lineHeight: 1.8 },
+  stepTitle: { fontFamily: F.serif, fontSize: 22, fontWeight: 600, color: MAROON, marginBottom: 10 },
+  stepBody: { fontFamily: F.sans, fontSize: 16, color: INK, lineHeight: 1.8 },
 
   cta: {
-    backgroundColor: CHARCOAL, borderRadius: 16, padding: '48px 40px', textAlign: 'center',
+    backgroundColor: MAROON, borderRadius: 10, padding: '48px 40px', textAlign: 'center',
   },
-  ctaTitle: { fontFamily: F.serif, fontSize: 28, color: '#fff', marginBottom: 24 },
+  ctaTitle: { fontFamily: F.serif, fontSize: 28, fontWeight: 600, color: CREAM, marginBottom: 24 },
   ctaBtn: {
-    padding: '14px 36px', backgroundColor: WINE, color: '#fff',
+    padding: '14px 36px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600,
     fontFamily: F.sans,
   },

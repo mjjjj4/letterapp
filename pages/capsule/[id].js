@@ -6,11 +6,13 @@ import { loadCart, saveCart } from '../../lib/cart'
 import SiteNav from '../../components/SiteNav'
 import SiteFooter from '../../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function CapsuleDetail() {
   const router = useRouter()
@@ -62,7 +64,7 @@ export default function CapsuleDetail() {
   const isDraft = capsule?.status === 'draft'
 
   const statusColor = (status) => {
-    if (status === 'draft') return { bg: `${BLUSH}55`, text: WINE }
+    if (status === 'draft') return { bg: 'rgba(77,0,0,0.08)', text: WINE }
     if (status === 'sealed') return { bg: '#e8f0f7', text: '#1a4a7a' }
     if (status === 'delivered') return { bg: '#d1fae5', text: '#065f46' }
     return { bg: '#eee', text: '#555' }
@@ -71,7 +73,7 @@ export default function CapsuleDetail() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CREAM }}>
-        <p style={{ fontFamily: F.sans, fontSize: 16, color: '#888' }}>Loading…</p>
+        <p style={{ fontFamily: F.sans, fontSize: 16, color: MUTED }}>Loading…</p>
       </div>
     )
   }
@@ -82,10 +84,10 @@ export default function CapsuleDetail() {
         <SiteNav />
         <div style={{ minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontFamily: F.serif, fontSize: 20, color: CHARCOAL, marginBottom: 16 }}>
+            <p style={{ fontFamily: F.serif, fontSize: 20, color: INK, marginBottom: 16 }}>
               {error || 'Capsule not found'}
             </p>
-            <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', backgroundColor: WINE, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontFamily: F.sans }}>
+            <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', backgroundColor: WINE, color: CREAM, border: 'none', borderRadius: 8, fontSize: 14, fontFamily: F.sans }}>
               Back to dashboard
             </button>
           </div>
@@ -192,8 +194,8 @@ const st = {
   content: { maxWidth: 760, margin: '0 auto', padding: '32px 16px 80px' },
 
   header: {
-    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
-    borderRadius: 14, padding: '28px 28px 24px', marginBottom: 20,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderRadius: 10, padding: '28px 28px 24px', marginBottom: 20,
   },
   meta: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 },
   statusBadge: {
@@ -201,24 +203,24 @@ const st = {
     padding: '3px 12px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
-  deliveryDate: { fontFamily: F.sans, fontSize: 13, color: '#888' },
+  deliveryDate: { fontFamily: F.sans, fontSize: 13, color: MUTED },
   title: {
-    fontFamily: F.serif, fontSize: 28, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 8px', lineHeight: 1.3, wordBreak: 'break-word',
+    fontFamily: F.serif, fontSize: 28, fontWeight: 600,
+    color: MAROON, margin: '0 0 8px', lineHeight: 1.3, wordBreak: 'break-word',
   },
-  created: { fontFamily: F.sans, fontSize: 13, color: '#aaa', margin: 0 },
+  created: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
 
   section: {
-    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
-    borderRadius: 14, padding: '24px 28px', marginBottom: 20,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderRadius: 10, padding: '24px 28px', marginBottom: 20,
   },
   sectionTitle: {
-    fontFamily: F.serif, fontSize: 18, fontWeight: 700,
-    color: CHARCOAL, marginBottom: 16,
+    fontFamily: F.serif, fontSize: 18, fontWeight: 600,
+    color: MAROON, marginBottom: 16,
   },
-  messageBox: { borderLeft: `3px solid ${BLUSH}`, paddingLeft: 16 },
+  messageBox: { borderLeft: `3px solid ${BORDER}`, paddingLeft: 16 },
   messageText: {
-    fontFamily: F.serif, fontSize: 16, color: CHARCOAL,
+    fontFamily: F.serif, fontSize: 16, color: INK,
     lineHeight: 1.85, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
   },
 
@@ -227,29 +229,29 @@ const st = {
     gap: 14, marginBottom: 16,
   },
   snapshotItem: {
-    backgroundColor: CREAM, border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '12px 14px',
   },
-  snapshotLabel: { fontFamily: F.sans, fontSize: 10, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px' },
-  snapshotValue: { fontFamily: F.sans, fontSize: 15, color: CHARCOAL, margin: 0, fontWeight: 600 },
+  snapshotLabel: { fontFamily: F.sans, fontSize: 10, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px' },
+  snapshotValue: { fontFamily: F.sans, fontSize: 15, color: INK, margin: 0, fontWeight: 600 },
   visionBox: {
-    backgroundColor: CREAM, border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '16px 18px',
   },
   visionLabel: { fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE, textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' },
-  visionText: { fontFamily: F.serif, fontSize: 15, color: CHARCOAL, lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' },
+  visionText: { fontFamily: F.serif, fontSize: 15, color: INK, lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' },
 
   actions: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 },
   sealBtn: {
-    width: '100%', padding: 18, backgroundColor: WINE, color: '#fff',
-    border: 'none', borderRadius: 10, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
+    width: '100%', padding: 18, backgroundColor: WINE, color: CREAM,
+    border: 'none', borderRadius: 8, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
   },
   viewCartBtn: {
     width: '100%', padding: 16, backgroundColor: 'transparent', color: WINE,
-    border: `2px solid ${WINE}`, borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
+    border: `2px solid ${WINE}`, borderRadius: 8, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
   },
   backBtn: {
-    width: '100%', padding: 14, backgroundColor: '#fff', color: '#666',
-    border: `1px solid ${BLUSH}`, borderRadius: 10, fontSize: 14, fontFamily: F.sans,
+    width: '100%', padding: 14, backgroundColor: CREAM, color: MUTED,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
   },
 }

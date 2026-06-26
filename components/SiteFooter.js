@@ -1,9 +1,7 @@
 import { useRouter } from 'next/router'
 
-const WINE = '#952323'
-const BLUSH = '#EDBFC6'
 const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function SiteFooter() {
   const router = useRouter()
@@ -64,22 +62,22 @@ const ft = {
   cols: { maxWidth: 1100, margin: '0 auto', paddingBottom: 48 },
   col: { display: 'flex', flexDirection: 'column', gap: 12 },
   logo: {
-    fontFamily: F.serif, fontSize: 22, fontWeight: 700, color: '#fff',
+    fontFamily: F.serif, fontSize: 22, fontWeight: 600, color: '#FFFBF5',
     cursor: 'pointer', userSelect: 'none',
   },
-  email: { fontFamily: F.sans, fontSize: 13, color: '#a89494', textDecoration: 'none' },
+  email: { fontFamily: F.sans, fontSize: 13, color: 'rgba(255,251,245,0.42)', textDecoration: 'none' },
   socialRow: { display: 'flex', gap: 14, marginTop: 4 },
-  socialLink: { color: '#c8a8a8', textDecoration: 'none', display: 'flex', alignItems: 'center' },
+  socialLink: { color: 'rgba(255,251,245,0.45)', textDecoration: 'none', display: 'flex', alignItems: 'center' },
   colLabel: {
     fontFamily: F.sans, fontSize: 11, fontWeight: 600,
-    color: '#a89494', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4,
+    color: 'rgba(255,251,245,0.42)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 4,
   },
-  link: { fontFamily: F.sans, fontSize: 14, color: '#c8a8a8', textDecoration: 'none' },
+  link: { fontFamily: F.sans, fontSize: 14, color: 'rgba(255,251,245,0.42)', textDecoration: 'none' },
   bottom: {
     borderTop: '1px solid #4a3838',
     padding: '20px 0',
     maxWidth: 1100, margin: '0 auto',
     textAlign: 'center',
   },
-  copy: { fontFamily: F.sans, fontSize: 12, color: '#6a5858' },
+  copy: { fontFamily: F.sans, fontSize: 12, color: 'rgba(255,251,245,0.4)' },
 }

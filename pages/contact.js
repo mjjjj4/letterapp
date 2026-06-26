@@ -2,11 +2,13 @@ import Head from 'next/head'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
-const WINE = '#952323'
-const CREAM = '#FFE6E1'
-const BLUSH = '#EDBFC6'
-const CHARCOAL = '#393232'
-const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+const MAROON = '#4D0000'
+const WINE = '#8A2323'
+const CREAM = '#FFFBF5'
+const BORDER = 'rgba(77, 0, 0, 0.15)'
+const INK = '#3A2418'
+const MUTED = '#7A6A5A'
+const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Contact() {
   return (
@@ -65,20 +67,20 @@ const s = {
     fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
     textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 12,
   },
-  title: { fontFamily: F.serif, fontSize: 42, color: CHARCOAL, marginBottom: 14 },
-  sub: { fontFamily: F.sans, fontSize: 17, color: '#666', lineHeight: 1.6 },
+  title: { fontFamily: F.serif, fontSize: 42, fontWeight: 600, color: MAROON, marginBottom: 14 },
+  sub: { fontFamily: F.sans, fontSize: 17, color: MUTED, lineHeight: 1.6 },
   cards: { display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 },
   card: {
-    backgroundColor: '#fff', borderRadius: 12, padding: '28px',
-    border: `1px solid ${BLUSH}`, display: 'flex', flexDirection: 'column', gap: 10,
+    backgroundColor: CREAM, borderRadius: 10, padding: '28px',
+    border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', gap: 10,
   },
   cardIcon: { fontSize: 28 },
-  cardTitle: { fontFamily: F.serif, fontSize: 20, color: CHARCOAL },
-  cardBody: { fontFamily: F.sans, fontSize: 15, color: '#666', lineHeight: 1.7 },
+  cardTitle: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: MAROON },
+  cardBody: { fontFamily: F.sans, fontSize: 15, color: INK, lineHeight: 1.7 },
   cardLink: { fontFamily: F.sans, color: WINE, textDecoration: 'none', fontWeight: 600, fontSize: 15 },
   note: {
     textAlign: 'center', padding: '20px',
-    backgroundColor: '#fff', borderRadius: 10, border: `1px solid ${BLUSH}`,
+    backgroundColor: CREAM, borderRadius: 10, border: `1px solid ${BORDER}`,
   },
-  noteText: { fontFamily: F.sans, fontSize: 14, color: '#888' },
+  noteText: { fontFamily: F.sans, fontSize: 14, color: MUTED },
 }
