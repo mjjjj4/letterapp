@@ -207,6 +207,10 @@ export default function Cart() {
                               </span>
                               <span style={cs.itemPrice}>${item.price.toFixed(2)}</span>
                             </div>
+                            <div style={cs.donationLine}>
+                              <span style={cs.donationLabel}>💛 NPCF donation (5% incl.)</span>
+                              <span style={cs.donationValue}>${(item.price * 0.05).toFixed(2)}</span>
+                            </div>
                           </div>
                         )
                       )}
@@ -273,7 +277,19 @@ export default function Cart() {
 
               {allPromo
                 ? <p style={cs.promoNote}>🎉 No payment required — Founder Promotion applies</p>
-                : <p style={cs.secureNote}>🔒 Secure checkout powered by Stripe</p>
+                : (
+                  <>
+                    <p style={cs.secureNote}>🔒 Secure checkout powered by Stripe</p>
+                    {allDatesSet && total > 0 && (
+                      <p style={cs.npcfNote}>
+                        💛 Includes a <strong>${(total * 0.05).toFixed(2)}</strong> donation to the{' '}
+                        <a href="https://nationalpcf.org" target="_blank" rel="noopener noreferrer" style={{ color: WINE, fontWeight: 600 }}>
+                          National Pediatric Cancer Foundation
+                        </a>
+                      </p>
+                    )}
+                  </>
+                )
               }
             </>
           )}
@@ -427,10 +443,20 @@ const cs = {
     fontWeight: 600, fontFamily: F.sans,
   },
   secureNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: 0,
+    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: '0 0 6px',
   },
   promoNote: {
     textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE,
     fontWeight: 600, margin: 0,
   },
+  npcfNote: {
+    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#777',
+    margin: 0, lineHeight: 1.5,
+  },
+  donationLine: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    borderTop: `1px dashed ${BLUSH}`, paddingTop: 8, marginTop: 8,
+  },
+  donationLabel: { fontFamily: F.sans, fontSize: 11, color: '#888' },
+  donationValue: { fontFamily: F.sans, fontSize: 11, color: '#b45309', fontWeight: 600 },
 }

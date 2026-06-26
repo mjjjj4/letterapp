@@ -90,23 +90,29 @@ export default async function handler(req, res) {
 
   console.log(`Processing ${capsuleItems.length} capsule(s) for user ${userId}`)
 
-  // Seal each capsule and set the delivery date
+  // Seal each capsule, set delivery date, and record donation amount (5% of price)
   const results = []
   for (const item of capsuleItems) {
-    console.log(`Sealing capsule ${item.capsuleId} → deliver_at: ${item.deliveryDate}`)
+    const donationAmount = +(item.price * 0.05).toFixed(2)
+    console.log(`Sealing capsule ${item.capsuleId} → deliver_at: ${item.deliveryDate} | donation: $${donationAmount}`)
+
     const { data, error } = await supabaseAdmin
       .from('capsules')
-      .update({ status: 'sealed', deliver_at: item.deliveryDate })
+      .update({
+        status: 'sealed',
+        deliver_at: item.deliveryDate,
+        donation_amount: donationAmount,
+      })
       .eq('id', item.capsuleId)
       .select('id, title')
 
     if (error) {
       console.error(`Failed to seal capsule ${item.capsuleId}:`, error.message)
-      results.push({ ...item, title: '(unknown)', success: false, error: error.message })
+      results.push({ ...item, donationAmount, title: '(unknown)', success: false, error: error.message })
     } else {
       const title = data?.[0]?.title || '(unknown)'
       console.log(`Sealed: "${title}"`)
-      results.push({ ...item, title, success: true })
+      results.push({ ...item, donationAmount, title, success: true })
     }
   }
 
@@ -114,10 +120,11 @@ export default async function handler(req, res) {
   const failed = results.filter(r => !r.success)
   console.log(`Sealed: ${succeeded.length} | Failed: ${failed.length}`)
 
-  // Send confirmation email
+  // Send confirmation email with donation note
   if (userEmail && succeeded.length > 0) {
     try {
       const total = succeeded.reduce((sum, r) => sum + (r.price || 0), 0)
+      const totalDonation = +(total * 0.05).toFixed(2)
 
       const capsuleRows = succeeded
         .map(r => `
@@ -135,12 +142,12 @@ export default async function handler(req, res) {
           ? `Your capsule "${succeeded[0].title}" is sealed 🔒`
           : `${succeeded.length} capsules sealed 🔒`,
         html: `
-          <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#333;">
-            <h2 style="font-size:22px;margin:0 0 8px;">Your capsule${succeeded.length !== 1 ? 's are' : ' is'} sealed 🔒</h2>
+          <div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto;color:#333;">
+            <h2 style="font-size:22px;margin:0 0 8px;color:#393232;">Your capsule${succeeded.length !== 1 ? 's are' : ' is'} sealed 🔒</h2>
             <p style="font-size:15px;color:#555;line-height:1.6;margin:0 0 24px;">
               ${succeeded.length === 1
                 ? `We'll deliver <strong>${succeeded[0].title}</strong> to your inbox on <strong>${formatDate(succeeded[0].deliveryDate)}</strong>.`
-                : `We'll deliver each one to your inbox on the dates below. Future you is going to love this.`}
+                : `We'll deliver each one to your inbox on the dates below.`}
             </p>
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
@@ -154,10 +161,30 @@ export default async function handler(req, res) {
               <tbody>${capsuleRows}</tbody>
             </table>
 
-            <div style="background:#f0fdf4;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;margin-bottom:28px;">
-              <span style="font-size:14px;color:#166534;font-weight:bold;">Total charged</span>
-              <span style="font-size:18px;color:#065f46;font-weight:bold;">$${total.toFixed(2)}</span>
-            </div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+              <tr>
+                <td style="background:#fdf4f5;border-radius:8px;padding:14px 16px;">
+                  <table style="width:100%;">
+                    <tr>
+                      <td style="font-size:14px;color:#393232;font-weight:bold;">Total charged</td>
+                      <td style="font-size:18px;color:#952323;font-weight:bold;text-align:right;">$${total.toFixed(2)}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <table style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+              <tr>
+                <td style="background:#fffbeb;border-radius:8px;padding:14px 16px;border-left:3px solid #f59e0b;">
+                  <p style="font-size:13px;color:#555;margin:0;line-height:1.6;">
+                    💛 Your purchase includes a <strong style="color:#393232;">$${totalDonation.toFixed(2)}</strong> donation to the
+                    <a href="https://nationalpcf.org" style="color:#952323;text-decoration:none;font-weight:600;">National Pediatric Cancer Foundation</a>,
+                    funding research for safer, less toxic childhood cancer treatments.
+                  </p>
+                </td>
+              </tr>
+            </table>
 
             <p style="font-size:13px;color:#888;line-height:1.6;margin:0;">
               — The Letter Team

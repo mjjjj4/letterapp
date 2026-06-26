@@ -173,7 +173,7 @@ export default async function handler(req, res) {
       for (const item of promoItems) {
         const { error: sealError } = await supabaseAdmin
           .from('capsules')
-          .update({ status: 'sealed', deliver_at: item.deliveryDate, is_founder_promo: true })
+          .update({ status: 'sealed', deliver_at: item.deliveryDate, is_founder_promo: true, donation_amount: 0 })
           .eq('id', item.capsuleId)
 
         if (sealError) {

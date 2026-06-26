@@ -78,6 +78,28 @@ export default function CheckoutSuccess() {
               </>
             )}
 
+            {order && !order.isFounderPromo && order.total > 0 && (
+              <div style={ss.donationBox}>
+                <span style={ss.donationHeart}>💛</span>
+                <p style={ss.donationText}>
+                  Your purchase includes a{' '}
+                  <strong style={{ color: ss.donationStrong.color }}>
+                    ${+(order.total * 0.05).toFixed(2)}
+                  </strong>{' '}
+                  donation to the{' '}
+                  <a
+                    href="https://nationalpcf.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={ss.npcfLink}
+                  >
+                    National Pediatric Cancer Foundation
+                  </a>
+                  , funding research for safer childhood cancer treatments.
+                </p>
+              </div>
+            )}
+
             <div style={ss.divider} />
             <p style={ss.emailNote}>A confirmation email has been sent with your capsule details.</p>
 
@@ -135,6 +157,17 @@ const ss = {
   emailNote: {
     fontFamily: F.sans, fontSize: 13, color: '#888', margin: '0 0 20px', lineHeight: 1.5,
   },
+  donationBox: {
+    display: 'flex', alignItems: 'flex-start', gap: 10,
+    backgroundColor: '#fffbeb', borderRadius: 10, padding: '14px 16px',
+    border: '1px solid #fde68a', margin: '16px 0 0', textAlign: 'left',
+  },
+  donationHeart: { fontSize: 16, flexShrink: 0, marginTop: 1 },
+  donationText: {
+    fontFamily: F.sans, fontSize: 13, color: '#555', margin: 0, lineHeight: 1.6,
+  },
+  donationStrong: { color: '#92400e' },
+  npcfLink: { color: '#952323', fontWeight: 600, textDecoration: 'none' },
   dashBtn: {
     width: '100%', padding: 14, backgroundColor: WINE, color: '#fff',
     border: 'none', borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: F.sans,

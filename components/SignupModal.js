@@ -58,6 +58,12 @@ export default function SignupModal({ onClose }) {
           <button type="submit" style={{ ...s.submit, opacity: loading ? 0.65 : 1 }} disabled={loading}>
             {loading ? 'Creating account…' : 'Create account'}
           </button>
+          <p style={s.charity}>
+            💛 5% of every capsule goes to the{' '}
+            <a href="https://nationalpcf.org" target="_blank" rel="noopener noreferrer" style={s.charityLink}>
+              National Pediatric Cancer Foundation
+            </a>
+          </p>
         </form>
         <p style={s.footer}>
           Already have an account?{' '}
@@ -117,4 +123,9 @@ const s = {
   },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 13, color: '#888', fontFamily: F.sans },
   footerLink: { color: WINE, cursor: 'pointer', fontWeight: 600 },
+  charity: {
+    marginTop: 14, fontSize: 11, color: '#999',
+    textAlign: 'center', fontFamily: F.sans, lineHeight: 1.5,
+  },
+  charityLink: { color: WINE, textDecoration: 'none', fontWeight: 600 },
 }

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 import SignupModal from '../components/SignupModal'
+import CharityBanner from '../components/CharityBanner'
 
 const BANNERS = [
   {
@@ -125,6 +126,7 @@ export default function Home() {
       {showModal && <SignupModal onClose={() => setShowModal(false)} />}
 
       <SiteNav onSignUp={() => setShowModal(true)} />
+      <CharityBanner />
 
       {/* ── SECTION 1 · Hero Carousel ─────────────────────────────────────── */}
       <div className="hero-wrap" style={hero.wrap}>
