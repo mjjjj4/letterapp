@@ -1,11 +1,64 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { supabase } from '../lib/supabase'
 
+// ─── Banner data ─────────────────────────────────────────────────────────────
+// To swap in real photos: set bg to e.g. 'url(/images/wax-seal.jpg) center/cover no-repeat'
+const BANNERS = [
+  {
+    bg: 'linear-gradient(150deg, #FFE6E1 0%, #EDBFC6 60%, #d9a5b0 100%)',
+    overlay: false,
+    headline: null,       // Banner 1 has its own special layout
+    sub: null,
+  },
+  {
+    bg: 'linear-gradient(160deg, #1e0808 0%, #2c1010 50%, #3d1515 100%)',
+    overlay: true,        // placeholder for wax seal photo
+    headline: 'Preserve your memories',
+    sub: null,
+  },
+  {
+    bg: 'linear-gradient(160deg, #f5e6d0 0%, #e0ccaa 50%, #c8b090 100%)',
+    overlay: true,        // placeholder for handwritten letter photo
+    headline: 'Write to your future self',
+    sub: null,
+  },
+  {
+    bg: 'linear-gradient(160deg, #c8b4a8 0%, #b09888 50%, #c8b4a8 100%)',
+    overlay: true,        // placeholder for hands/envelope photo
+    headline: "Open it when you're ready",
+    sub: null,
+  },
+]
+
+const TESTIMONIALS = [
+  {
+    stars: 5,
+    quote: 'I wrote a letter to myself for my 30th birthday. When I received it at 40, I cried for an hour.',
+    name: 'Sarah M.',
+  },
+  {
+    stars: 5,
+    quote: "The most meaningful thing I've ever done — writing to my future self. It changed how I see today.",
+    name: 'James K.',
+  },
+  {
+    stars: 5,
+    quote: "I sealed one for my daughter's wedding day. She doesn't know it exists yet. I can't wait.",
+    name: 'Patricia L.',
+  },
+  {
+    stars: 5,
+    quote: 'Simple, beautiful, and it just works. Exactly what it promises to be.',
+    name: 'David R.',
+  },
+]
+
 export default function Home() {
   const router = useRouter()
   const [user, setUser] = useState(null)
+  const [current, setCurrent] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [email, setEmail] = useState('')
@@ -13,10 +66,29 @@ export default function Home() {
   const [confirmPw, setConfirmPw] = useState('')
   const [modalError, setModalError] = useState('')
   const [modalLoading, setModalLoading] = useState(false)
+  const timerRef = useRef(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
   }, [])
+
+  const startTimer = useCallback(() => {
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(
+      () => setCurrent(p => (p + 1) % BANNERS.length),
+      5000
+    )
+  }, [])
+
+  useEffect(() => {
+    startTimer()
+    return () => clearInterval(timerRef.current)
+  }, [startTimer])
+
+  const goTo = useCallback((idx) => {
+    setCurrent(idx)
+    startTimer()
+  }, [startTimer])
 
   const openModal = () => {
     setShowModal(true)
@@ -41,6 +113,7 @@ export default function Home() {
     router.push(`/verify?email=${encodeURIComponent(email)}`)
   }
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
       <Head>
@@ -50,15 +123,18 @@ export default function Home() {
         <meta property="og:description" content="Write a letter to your future self. We deliver it when you're ready." />
         <meta property="og:type" content="website" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>{css}</style>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+        <style>{globalCss}</style>
       </Head>
 
-      {/* ── Signup Modal ── */}
+      {/* ── Signup Modal ────────────────────────────────────────────────────── */}
       {showModal && (
         <div style={m.overlay} onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div style={m.modal}>
             <button onClick={() => setShowModal(false)} style={m.closeBtn} aria-label="Close">✕</button>
-            <div style={m.envelopeIcon}>✉</div>
+            <div style={m.icon}>✉</div>
             <h2 style={m.title}>Create your account</h2>
             <p style={m.sub}>Your first capsule is waiting to be written.</p>
             <form onSubmit={handleSignup} style={m.form}>
@@ -72,13 +148,13 @@ export default function Home() {
               <label style={m.label}>Confirm password</label>
               <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
                 style={m.input} placeholder="Repeat your password" required disabled={modalLoading} />
-              <button type="submit" style={{ ...m.submit, opacity: modalLoading ? 0.6 : 1 }} disabled={modalLoading}>
-                {modalLoading ? 'Creating account…' : 'Create account →'}
+              <button type="submit" style={{ ...m.submit, opacity: modalLoading ? 0.65 : 1 }} disabled={modalLoading}>
+                {modalLoading ? 'Creating account…' : 'Create account'}
               </button>
             </form>
             <p style={m.footer}>
               Already have an account?{' '}
-              <span onClick={() => { setShowModal(false); router.push('/login') }} style={m.link}>
+              <span onClick={() => { setShowModal(false); router.push('/login') }} style={m.footerLink}>
                 Sign in
               </span>
             </p>
@@ -86,249 +162,234 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Mobile menu ── */}
+      {/* ── Mobile Drawer ───────────────────────────────────────────────────── */}
       {menuOpen && (
         <div style={mn.overlay} onClick={() => setMenuOpen(false)}>
           <div style={mn.drawer} onClick={e => e.stopPropagation()}>
             <div style={mn.header}>
               <span style={mn.brand}>The Letter</span>
-              <button onClick={() => setMenuOpen(false)} style={mn.closeBtn}>✕</button>
+              <button onClick={() => setMenuOpen(false)} style={mn.closeBtn} aria-label="Close menu">✕</button>
             </div>
-            <nav style={mn.links}>
+            <div style={mn.body}>
+              {/* Priority: Sign up + Sign in first */}
+              <button onClick={openModal} style={mn.signUpBtn}>Sign up</button>
+              <a href="/login" style={mn.signInLink}>Sign in</a>
+              <div style={mn.divider} />
               <a href="/how-it-works" style={mn.link}>How it works</a>
               <a href="/faq" style={mn.link}>FAQ</a>
               <a href="/about" style={mn.link}>About</a>
+              <a href="/contact" style={mn.link}>Contact</a>
               <div style={mn.divider} />
-              <a href="/privacy" style={mn.linkSmall}>Privacy policy</a>
-              <a href="/terms" style={mn.linkSmall}>Terms of service</a>
-              <a href="/contact" style={mn.linkSmall}>Contact</a>
-              <div style={mn.divider} />
-              <a href="/login" style={mn.link}>Sign in</a>
-              <button onClick={openModal} style={mn.signUpBtn}>Sign up</button>
-            </nav>
+              <a href="/privacy" style={mn.linkSmall}>Privacy</a>
+              <a href="/terms" style={mn.linkSmall}>Terms</a>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Fixed Nav ── */}
+      {/* ── Navigation ──────────────────────────────────────────────────────── */}
       <nav style={n.nav}>
         <span style={n.logo} onClick={() => router.push('/')}>The Letter</span>
         <div className="desktop-nav">
           {user ? (
-            <button onClick={() => router.push('/dashboard')} style={n.signUpBtn}>
-              My Dashboard →
-            </button>
+            <button onClick={() => router.push('/dashboard')} style={n.signUpBtn}>My Dashboard →</button>
           ) : (
             <>
-              <button onClick={() => router.push('/login')} style={n.signInBtn}>Sign in</button>
               <button onClick={openModal} style={n.signUpBtn}>Sign up</button>
+              <span onClick={() => router.push('/login')} style={n.signInLink}>Sign in</span>
             </>
           )}
         </div>
-        <button className="hamburger-btn" onClick={() => setMenuOpen(true)} style={n.hamburger} aria-label="Menu">
+        <button className="hamburger-btn" onClick={() => setMenuOpen(true)} style={n.hamburger} aria-label="Open menu">
           <span style={n.bar} /><span style={n.bar} /><span style={n.bar} />
         </button>
       </nav>
 
-      {/* ── Hero ── */}
-      <section style={h.section}>
-        <div style={h.glow1} /><div style={h.glow2} />
-        <div style={h.inner}>
-          <div style={h.badge}>Time capsule · Est. 2026</div>
-          <h1 className="hero-title" style={h.title}>Messages worth<br />waiting for</h1>
-          <p className="hero-sub" style={h.sub}>
-            Create a capsule. Write a letter to your future self.<br className="desktop-br" />
-            We keep it safe until you&rsquo;re ready to open it.
-          </p>
-          <div style={h.actions}>
-            <button onClick={openModal} style={h.cta}>
-              Create your first capsule
-            </button>
-            <button onClick={() => router.push('/how-it-works')} style={h.ghost}>
-              How it works →
-            </button>
-          </div>
-          <p style={h.hint}>$1.85/year · No subscription · Delivered to your inbox</p>
-        </div>
-        <div style={h.scroll}>↓</div>
-      </section>
+      {/* ── SECTION 1 · Hero Carousel ───────────────────────────────────────── */}
+      <div className="hero-wrap" style={hero.wrap}>
 
-      {/* ── Example Capsules ── */}
-      <section className="section-pad" style={ex.section}>
-        <div style={ex.inner}>
-          <p style={ex.eyebrow}>Real examples</p>
-          <h2 style={ex.heading}>What people write about</h2>
-          <p style={ex.body}>Every capsule is private. These are the kinds of moments people capture.</p>
+        {/* Slides */}
+        {BANNERS.map((b, i) => (
+          <div
+            key={i}
+            style={{
+              ...hero.slide,
+              background: b.bg,
+              opacity: i === current ? 1 : 0,
+              zIndex: i === current ? 1 : 0,
+            }}
+          >
+            {/* Dark overlay for image-backed banners */}
+            {b.overlay && <div style={hero.overlay} />}
 
-          <div className="cards-grid" style={ex.grid}>
-            {[
-              {
-                badge: 'Self', badgeColor: '#f59e0b', badgeBg: '#fffbeb',
-                title: '"From age 24 to my wedding day"',
-                lines: [100, 85, 95, 60],
-                from: null,
-                date: 'Opens June 15, 2029', years: '5 years', price: '$9.25',
-                tagline: 'A letter to read on the day it all changes.'
-              },
-              {
-                badge: 'Self', badgeColor: '#f59e0b', badgeBg: '#fffbeb',
-                title: '"Letter to myself in 10 years"',
-                lines: [100, 75, 90, 50, 70],
-                from: null,
-                date: 'Opens June 25, 2036', years: '10 years', price: '$18.50',
-                tagline: 'Will I have made it? Only one way to find out.'
-              },
-              {
-                badge: 'Gift', badgeColor: '#10b981', badgeBg: '#ecfdf5',
-                title: '"For your 21st birthday"',
-                lines: [100, 80, 60],
-                from: 'From: Mom & Dad',
-                date: 'Opens in 3 years', years: '3 years', price: '$5.55',
-                tagline: 'A message from the people who love you most.'
-              },
-            ].map((c, i) => (
-              <div key={i} style={ex.card}>
-                <div style={ex.cardTop}>
-                  <span style={{ ...ex.badge, color: c.badgeColor, backgroundColor: c.badgeBg }}>
-                    {c.badge}
-                  </span>
-                  {c.from && <span style={ex.from}>{c.from}</span>}
-                </div>
-                <h3 style={ex.cardTitle}>{c.title}</h3>
-                <div style={ex.preview}>
-                  {c.lines.map((w, j) => (
-                    <div key={j} style={{ ...ex.line, width: `${w}%` }} />
-                  ))}
-                </div>
-                <p style={ex.tagline}>{c.tagline}</p>
-                <div style={ex.meta}>
-                  <div style={ex.metaLeft}>
-                    <span style={ex.metaDate}>📅 {c.date}</span>
-                    <span style={ex.metaYears}>🕐 {c.years} of storage</span>
-                  </div>
-                  <span style={ex.price}>{c.price}</span>
-                </div>
+            {/* Banner 1 — special layout */}
+            {i === 0 && (
+              <div style={hero.inner}>
+                <p style={hero.logoLabel}>The Letter</p>
+                <h1 style={hero.mainHeadline}>Messages worth<br />waiting for</h1>
+                <p style={hero.mainSub}>
+                  Create a capsule. Write to your future self.<br className="no-mobile" />
+                  We keep it safe until you&rsquo;re ready to open it.
+                </p>
+                <button onClick={openModal} style={hero.cta}>Create a capsule</button>
               </div>
-            ))}
+            )}
+
+            {/* Banners 2–4 */}
+            {i > 0 && (
+              <div style={hero.inner}>
+                <h2 style={hero.overlayHeadline}>{b.headline}</h2>
+                <button onClick={openModal} style={hero.cta}>Create a capsule</button>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* ← Arrow */}
+        <button
+          style={{ ...hero.arrow, left: 20 }}
+          onClick={() => goTo((current - 1 + BANNERS.length) % BANNERS.length)}
+          aria-label="Previous"
+        >
+          ‹
+        </button>
+
+        {/* → Arrow */}
+        <button
+          style={{ ...hero.arrow, right: 20 }}
+          onClick={() => goTo((current + 1) % BANNERS.length)}
+          aria-label="Next"
+        >
+          ›
+        </button>
+
+        {/* Dots */}
+        <div style={hero.dots}>
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              style={i === current ? hero.dotActive : hero.dot}
+              aria-label={`Go to banner ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── SECTION 2 · Visual Journey ──────────────────────────────────────── */}
+      <section style={journey.section}>
+        <div className="journey-grid" style={journey.grid}>
+
+          {/* Card 1: Write */}
+          <div className="journey-card" style={{
+            ...journey.card,
+            // TODO: replace with real photo — background: 'url(/images/letter-paper.jpg) center/cover no-repeat'
+            background: 'linear-gradient(160deg, #f0e6d2 0%, #dcc9a8 50%, #c8b48c 100%)',
+          }}>
+            <div style={journey.cardOverlay} />
+            <h3 style={journey.cardText}>Write your letter</h3>
           </div>
 
-          <div style={ex.cta}>
-            <button onClick={openModal} style={ex.ctaBtn}>Write your first capsule →</button>
+          {/* Card 2: Safe */}
+          <div className="journey-card" style={{
+            ...journey.card,
+            // TODO: replace with real photo — background: 'url(/images/wax-seal.jpg) center/cover no-repeat'
+            background: 'linear-gradient(160deg, #4a1515 0%, #2a0808 50%, #1a0505 100%)',
+          }}>
+            <div style={journey.cardOverlay} />
+            <h3 style={journey.cardText}>We keep it safe</h3>
           </div>
+
+          {/* Card 3: Open */}
+          <div className="journey-card" style={{
+            ...journey.card,
+            // TODO: replace with real photo — background: 'url(/images/envelope-opening.jpg) center/cover no-repeat'
+            background: 'linear-gradient(160deg, #f2d4d0 0%, #e0b4ae 50%, #cfa09a 100%)',
+          }}>
+            <div style={journey.cardOverlay} />
+            <h3 style={journey.cardText}>Open it when you&rsquo;re ready</h3>
+          </div>
+
         </div>
       </section>
 
-      {/* ── Pricing ── */}
-      <section className="section-pad" style={pr.section}>
-        <div style={pr.inner}>
-          <p style={pr.eyebrow}>Pricing</p>
-          <h2 style={pr.heading}>Pay once. Keep it safe forever.</h2>
-          <p style={pr.sub}>Storage cost is simple: <strong>$1.85 per year</strong> until delivery. That's it.</p>
+      {/* ── SECTION 3 · Testimonials ────────────────────────────────────────── */}
+      <section style={test.section}>
+        <h2 style={test.heading}>What people say</h2>
 
-          <div style={pr.tableWrap}>
-            <table className="pricing-table" style={pr.table}>
-              <thead>
-                <tr style={pr.thead}>
-                  <th style={pr.th}>Delivery</th>
-                  <th style={pr.th}>Years</th>
-                  <th style={pr.th}>Total cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: '1 year from now', years: 1, cost: '$1.85' },
-                  { label: '2 years from now', years: 2, cost: '$3.70' },
-                  { label: '5 years from now', years: 5, cost: '$9.25' },
-                  { label: '10 years from now', years: 10, cost: '$18.50' },
-                  { label: '20 years from now', years: 20, cost: '$37.00' },
-                ].map((row, i) => (
-                  <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#faf9f7' }}>
-                    <td style={pr.td}>{row.label}</td>
-                    <td style={pr.td}>{row.years} yr{row.years > 1 ? 's' : ''}</td>
-                    <td style={{ ...pr.td, fontWeight: 'bold', color: '#1a1a1a' }}>{row.cost}</td>
-                  </tr>
+        {/* Desktop grid / Mobile scroll */}
+        <div className="test-grid" style={test.grid}>
+          {TESTIMONIALS.map((t, i) => (
+            <div key={i} className="test-card" style={test.card}>
+              <div style={test.stars}>
+                {Array.from({ length: t.stars }).map((_, j) => (
+                  <span key={j} style={test.star}>★</span>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p style={pr.note}>No subscriptions. No hidden fees. One payment, kept safe until the day you chose.</p>
-
-          <div style={pr.coming}>
-            <p style={pr.comingTitle}>Coming soon</p>
-            <div className="cards-grid-2" style={pr.comingGrid}>
-              <div style={pr.comingCard}>
-                <span style={pr.comingBadge}>Soon</span>
-                <span style={pr.comingText}>Premium snapshot — audio message + extra photos</span>
               </div>
-              <div style={pr.comingCard}>
-                <span style={pr.comingBadge}>Soon</span>
-                <span style={pr.comingText}>Print your letter on a card ($29) or frame ($79)</span>
-              </div>
+              <p style={test.quote}>&ldquo;{t.quote}&rdquo;</p>
+              <p style={test.name}>— {t.name}</p>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* ── Social proof ── */}
-      <section className="section-pad" style={sp.section}>
-        <div style={sp.inner}>
-          <div className="stats-row" style={sp.row}>
-            <div style={sp.stat}>
-              <span style={sp.num}>500+</span>
-              <span style={sp.label}>Capsules sealed</span>
-            </div>
-            <div style={sp.divider} />
-            <div style={sp.stat}>
-              <span style={sp.num}>1,247</span>
-              <span style={sp.label}>Days of memories kept safe</span>
-            </div>
-            <div style={sp.divider} />
-            <div style={sp.stat}>
-              <span style={sp.num}>$1.85</span>
-              <span style={sp.label}>Per year, forever</span>
-            </div>
-          </div>
-          <p style={sp.tagline}>
-            &ldquo;The most meaningful email I&rsquo;ve ever sent — to myself.&rdquo;
-          </p>
-          <p style={sp.attribution}>— Early user, writing to themselves in 2031</p>
-        </div>
+      {/* ── SECTION 4 · CTA ────────────────────────────────────────────────── */}
+      <section style={cta.section}>
+        <h2 style={cta.heading}>Ready to create your first capsule?</h2>
+        <p style={cta.sub}>It takes 5 minutes.</p>
+        <button onClick={openModal} style={cta.btn}>Sign up now</button>
       </section>
 
-      {/* ── Bottom CTA ── */}
-      <section className="section-pad" style={ct.section}>
-        <div style={ct.inner}>
-          <h2 className="hero-title" style={ct.heading}>Ready to write your first capsule?</h2>
-          <p style={ct.sub}>It takes 5 minutes. We&rsquo;ll keep it safe.</p>
-          <button onClick={openModal} style={ct.btn}>Sign up now — it&rsquo;s free to start</button>
-          <p style={ct.hint}>No credit card until you seal &amp; send.</p>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
+      {/* ── SECTION 5 · Footer ──────────────────────────────────────────────── */}
       <footer style={ft.footer}>
-        <div style={ft.inner}>
-          <div className="footer-cols" style={ft.cols}>
-            <div style={ft.brand}>
-              <span style={ft.logo}>The Letter</span>
-              <p style={ft.tagline}>Messages worth waiting for.</p>
-              <p style={ft.email}>hello@theletter.app</p>
-            </div>
-            <div style={ft.links}>
-              <a href="/how-it-works" style={ft.link}>How it works</a>
-              <a href="/faq" style={ft.link}>FAQ</a>
-              <a href="/about" style={ft.link}>About</a>
-              <a href="/contact" style={ft.link}>Contact</a>
-            </div>
-            <div style={ft.links}>
-              <a href="/privacy" style={ft.link}>Privacy policy</a>
-              <a href="/terms" style={ft.link}>Terms of service</a>
-              <a href="/login" style={ft.link}>Sign in</a>
+        <div className="footer-cols" style={ft.cols}>
+
+          {/* Left: Brand */}
+          <div style={ft.col}>
+            <span style={ft.logo}>The Letter</span>
+            <a href="mailto:hello@theletter.app" style={ft.email}>hello@theletter.app</a>
+          </div>
+
+          {/* Center: Social */}
+          <div style={ft.colCenter}>
+            <p style={ft.socialLabel}>Follow us</p>
+            <div style={ft.socialRow}>
+              <a href="#" style={ft.socialLink} aria-label="Instagram">
+                {/* Instagram */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </a>
+              <a href="#" style={ft.socialLink} aria-label="TikTok">
+                {/* TikTok */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/>
+                </svg>
+              </a>
+              <a href="#" style={ft.socialLink} aria-label="Twitter / X">
+                {/* X */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </a>
             </div>
           </div>
-          <div style={ft.bottom}>
-            <span style={ft.copy}>© 2026 The Letter. All rights reserved.</span>
+
+          {/* Right: Links */}
+          <div style={ft.col}>
+            <a href="/how-it-works" style={ft.link}>How it works</a>
+            <a href="/faq" style={ft.link}>FAQ</a>
+            <a href="/about" style={ft.link}>About</a>
+            <a href="/contact" style={ft.link}>Contact</a>
+          </div>
+        </div>
+
+        <div style={ft.bottom}>
+          <span style={ft.copy}>© 2026 The Letter</span>
+          <div style={ft.legal}>
+            <a href="/privacy" style={ft.legalLink}>Privacy Policy</a>
+            <span style={ft.legalDot}>·</span>
+            <a href="/terms" style={ft.legalLink}>Terms of Service</a>
           </div>
         </div>
       </footer>
@@ -336,168 +397,346 @@ export default function Home() {
   )
 }
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
-const css = `
+// ─── Global CSS ───────────────────────────────────────────────────────────────
+const globalCss = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
-  body { font-family: Arial, 'Helvetica Neue', sans-serif; background: #fff; }
+  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: #FFE6E1; color: #393232; }
 
-  .desktop-nav { display: flex; align-items: center; gap: 12px; }
+  /* Nav */
+  .desktop-nav { display: flex; align-items: center; gap: 16px; }
   .hamburger-btn { display: none !important; }
-  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-  .cards-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .hero-title { font-size: 62px; }
-  .hero-sub { font-size: 20px; }
-  .section-pad { padding: 80px 24px; }
-  .desktop-br { display: inline; }
-  .stats-row { display: flex; align-items: center; justify-content: center; gap: 40px; }
-  .footer-cols { display: flex; gap: 48px; }
-  .pricing-table th, .pricing-table td { padding: 16px 20px; font-size: 15px; }
+
+  /* Hero */
+  .hero-wrap { height: 100vh; min-height: 500px; }
+  .no-mobile { display: inline; }
+
+  /* Journey cards */
+  .journey-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .journey-card { height: 460px; position: relative; overflow: hidden; cursor: default; transition: transform 0.35s ease; }
+  .journey-card:hover { transform: scale(1.025); z-index: 2; }
+
+  /* Testimonials */
+  .test-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .test-card {}
+
+  /* Footer */
+  .footer-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; }
+
+  @media (max-width: 1023px) {
+    .test-grid { grid-template-columns: repeat(2, 1fr); }
+  }
 
   @media (max-width: 767px) {
     .desktop-nav { display: none !important; }
     .hamburger-btn { display: flex !important; }
-    .cards-grid { grid-template-columns: 1fr; }
-    .cards-grid-2 { grid-template-columns: 1fr; }
-    .hero-title { font-size: 36px; line-height: 1.2; }
-    .hero-sub { font-size: 17px; }
-    .section-pad { padding: 56px 20px; }
-    .desktop-br { display: none; }
-    .stats-row { flex-direction: column; gap: 32px; }
-    .footer-cols { flex-direction: column; gap: 32px; }
-    .pricing-table th, .pricing-table td { padding: 12px 10px; font-size: 13px; }
+    .hero-wrap { height: 70vh; min-height: 420px; }
+    .no-mobile { display: none; }
+    .journey-grid { grid-template-columns: 1fr; }
+    .journey-card { height: 320px; }
+    .test-grid {
+      display: flex !important;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 16px;
+      padding: 0 0 12px;
+    }
+    .test-grid::-webkit-scrollbar { display: none; }
+    .test-card { scroll-snap-align: start; min-width: 82vw; flex-shrink: 0; }
+    .footer-cols { grid-template-columns: 1fr; gap: 32px; }
   }
 `
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Style objects ────────────────────────────────────────────────────────────
+const WINE = '#952323'
+const CREAM = '#FFE6E1'
+const BLUSH = '#EDBFC6'
+const CHARCOAL = '#393232'
+const font = { serif: "'Lora', 'Georgia', serif", sans: "'Inter', Arial, sans-serif" }
+
 const n = {
-  nav: { position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', backgroundColor: 'rgba(26,26,26,0.97)', backdropFilter: 'blur(10px)' },
-  logo: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 22, fontWeight: 'bold', color: '#fff', cursor: 'pointer', letterSpacing: '0.3px' },
-  signInBtn: { padding: '8px 18px', backgroundColor: 'transparent', color: '#ccc', border: '1px solid #444', borderRadius: 6, fontSize: 14, cursor: 'pointer', fontFamily: 'Arial,sans-serif', transition: 'all 0.15s' },
-  signUpBtn: { padding: '8px 20px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  hamburger: { display: 'flex', flexDirection: 'column', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer', padding: 6 },
-  bar: { display: 'block', width: 22, height: 2, backgroundColor: '#fff', borderRadius: 2 },
+  nav: {
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+    height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0 28px',
+    backgroundColor: 'rgba(255,230,225,0.96)',
+    backdropFilter: 'blur(12px)',
+    borderBottom: '1px solid rgba(237,191,198,0.4)',
+  },
+  logo: {
+    fontFamily: font.serif, fontSize: 22, fontWeight: 700, color: WINE,
+    cursor: 'pointer', letterSpacing: '0.3px',
+  },
+  signUpBtn: {
+    padding: '9px 22px', backgroundColor: WINE, color: '#fff',
+    border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600,
+    cursor: 'pointer', fontFamily: font.sans,
+  },
+  signInLink: {
+    fontSize: 14, color: CHARCOAL, cursor: 'pointer',
+    fontFamily: font.sans, fontWeight: 500,
+  },
+  hamburger: {
+    display: 'flex', flexDirection: 'column', gap: 5,
+    background: 'transparent', border: 'none', cursor: 'pointer', padding: 6,
+  },
+  bar: { display: 'block', width: 24, height: 2, backgroundColor: CHARCOAL, borderRadius: 2 },
 }
 
-const h = {
-  section: { position: 'relative', minHeight: '100vh', backgroundColor: '#1a1a1a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 24px 80px', overflow: 'hidden', textAlign: 'center' },
-  glow1: { position: 'absolute', top: '20%', left: '15%', width: 500, height: 500, background: 'radial-gradient(circle, rgba(245,158,11,0.07) 0%, transparent 70%)', pointerEvents: 'none' },
-  glow2: { position: 'absolute', bottom: '10%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 70%)', pointerEvents: 'none' },
-  inner: { position: 'relative', zIndex: 1, maxWidth: 720 },
-  badge: { display: 'inline-block', padding: '4px 14px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b', borderRadius: 20, fontSize: 12, fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 28 },
-  title: { fontFamily: "'Georgia','Times New Roman',serif", color: '#fff', lineHeight: 1.1, marginBottom: 24 },
-  sub: { color: '#a8a29e', lineHeight: 1.7, marginBottom: 40 },
-  actions: { display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 },
-  cta: { padding: '16px 36px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  ghost: { padding: '16px 28px', backgroundColor: 'transparent', color: '#ccc', border: '1px solid #444', borderRadius: 8, fontSize: 16, cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  hint: { fontSize: 13, color: '#666', letterSpacing: '0.3px' },
-  scroll: { position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', color: '#444', fontSize: 20, animation: 'bounce 2s infinite' },
+const hero = {
+  wrap: {
+    position: 'relative', overflow: 'hidden',
+    marginTop: 64, // offset for fixed nav
+  },
+  slide: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'opacity 0.9s ease-in-out',
+  },
+  overlay: {
+    position: 'absolute', inset: 0,
+    backgroundColor: 'rgba(57,50,50,0.42)',
+  },
+  inner: {
+    position: 'relative', zIndex: 2, textAlign: 'center',
+    padding: '0 24px', maxWidth: 700,
+  },
+  logoLabel: {
+    fontFamily: font.serif, fontSize: 15, fontWeight: 600,
+    color: WINE, letterSpacing: '2px', textTransform: 'uppercase',
+    marginBottom: 20,
+  },
+  mainHeadline: {
+    fontFamily: font.serif, fontSize: 'clamp(40px, 7vw, 72px)',
+    fontWeight: 700, color: WINE, lineHeight: 1.1, marginBottom: 22,
+  },
+  mainSub: {
+    fontFamily: font.sans, fontSize: 'clamp(16px, 2.5vw, 20px)',
+    color: CHARCOAL, lineHeight: 1.7, marginBottom: 36, fontWeight: 300,
+  },
+  overlayHeadline: {
+    fontFamily: font.serif, fontSize: 'clamp(32px, 6vw, 60px)',
+    fontWeight: 700, color: '#fff', lineHeight: 1.15, marginBottom: 32,
+    textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+  },
+  cta: {
+    padding: '14px 40px', backgroundColor: WINE, color: '#fff',
+    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600,
+    cursor: 'pointer', fontFamily: font.sans, letterSpacing: '0.3px',
+  },
+  arrow: {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,
+    width: 44, height: 44, borderRadius: '50%',
+    backgroundColor: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(4px)',
+    border: '1px solid rgba(255,255,255,0.35)', color: '#fff',
+    fontSize: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', lineHeight: 1,
+  },
+  dots: {
+    position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+    display: 'flex', gap: 8, zIndex: 10,
+  },
+  dot: {
+    width: 8, height: 8, borderRadius: '50%',
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    border: 'none', cursor: 'pointer', padding: 0,
+  },
+  dotActive: {
+    width: 24, height: 8, borderRadius: 4,
+    backgroundColor: '#fff',
+    border: 'none', cursor: 'pointer', padding: 0,
+    transition: 'width 0.3s ease',
+  },
 }
 
-const ex = {
-  section: { backgroundColor: '#faf9f7' },
-  inner: { maxWidth: 1100, margin: '0 auto' },
-  eyebrow: { fontSize: 12, fontWeight: 'bold', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 10 },
-  heading: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 36, color: '#1a1a1a', marginBottom: 12 },
-  body: { fontSize: 16, color: '#666', marginBottom: 48, lineHeight: 1.6 },
-  grid: { marginBottom: 48 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 28, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', borderLeft: '4px solid #f59e0b', display: 'flex', flexDirection: 'column', gap: 16 },
-  cardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  badge: { fontSize: 11, fontWeight: 'bold', padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.6px' },
-  from: { fontSize: 12, color: '#888' },
-  cardTitle: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 18, color: '#1a1a1a', lineHeight: 1.4 },
-  preview: { padding: '4px 0', display: 'flex', flexDirection: 'column', gap: 8 },
-  line: { height: 9, backgroundColor: '#e8e4de', borderRadius: 4 },
-  tagline: { fontSize: 13, color: '#888', fontStyle: 'italic', lineHeight: 1.5 },
-  meta: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #f0ede8', paddingTop: 14 },
-  metaLeft: { display: 'flex', flexDirection: 'column', gap: 4 },
-  metaDate: { fontSize: 12, color: '#555' },
-  metaYears: { fontSize: 12, color: '#888' },
-  price: { fontSize: 22, fontWeight: 'bold', color: '#1a1a1a', fontFamily: 'Arial,sans-serif' },
-  cta: { textAlign: 'center' },
-  ctaBtn: { padding: '14px 36px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
+const journey = {
+  section: { overflow: 'hidden' },
+  grid: {},
+  card: {
+    backgroundSize: 'cover', backgroundPosition: 'center',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
+  },
+  cardOverlay: {
+    position: 'absolute', inset: 0,
+    backgroundColor: 'rgba(57,50,50,0.38)',
+  },
+  cardText: {
+    position: 'relative', zIndex: 1,
+    fontFamily: font.serif, fontSize: 'clamp(22px, 3vw, 32px)',
+    fontWeight: 700, color: '#fff',
+    textAlign: 'center', padding: '0 24px',
+    textShadow: '0 2px 16px rgba(0,0,0,0.25)',
+    lineHeight: 1.3,
+  },
 }
 
-const pr = {
-  section: { backgroundColor: '#fff' },
-  inner: { maxWidth: 700, margin: '0 auto' },
-  eyebrow: { fontSize: 12, fontWeight: 'bold', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 10 },
-  heading: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 36, color: '#1a1a1a', marginBottom: 16 },
-  sub: { fontSize: 17, color: '#555', marginBottom: 36, lineHeight: 1.7 },
-  tableWrap: { borderRadius: 12, overflow: 'hidden', border: '1px solid #e8e4de', marginBottom: 24 },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  thead: { backgroundColor: '#1a1a1a' },
-  th: { textAlign: 'left', color: '#fff', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.8px' },
-  td: { textAlign: 'left', color: '#444', borderBottom: '1px solid #f0ede8' },
-  note: { fontSize: 14, color: '#888', lineHeight: 1.6, marginBottom: 40, fontStyle: 'italic' },
-  coming: {},
-  comingTitle: { fontSize: 12, fontWeight: 'bold', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 },
-  comingGrid: {},
-  comingCard: { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: '#faf9f7', border: '1px dashed #ddd', borderRadius: 8, padding: '14px 16px' },
-  comingBadge: { fontSize: 10, fontWeight: 'bold', backgroundColor: '#e8e4de', color: '#888', padding: '3px 8px', borderRadius: 4, textTransform: 'uppercase', whiteSpace: 'nowrap' },
-  comingText: { fontSize: 13, color: '#666', lineHeight: 1.4 },
+const test = {
+  section: {
+    backgroundColor: CREAM, padding: '72px 28px',
+  },
+  heading: {
+    fontFamily: font.serif, fontSize: 'clamp(26px, 4vw, 38px)',
+    fontWeight: 700, color: CHARCOAL, textAlign: 'center',
+    marginBottom: 40,
+  },
+  grid: { maxWidth: 1200, margin: '0 auto' },
+  card: {
+    backgroundColor: '#fff', borderRadius: 12,
+    border: `1.5px solid ${BLUSH}`,
+    padding: '28px 24px',
+    boxShadow: '0 2px 14px rgba(149,35,35,0.06)',
+    display: 'flex', flexDirection: 'column', gap: 12,
+  },
+  stars: { display: 'flex', gap: 2 },
+  star: { color: WINE, fontSize: 18 },
+  quote: {
+    fontFamily: font.serif, fontSize: 15, color: CHARCOAL,
+    lineHeight: 1.75, fontStyle: 'italic', flex: 1,
+  },
+  name: {
+    fontFamily: font.sans, fontSize: 13, color: '#888',
+    fontWeight: 500,
+  },
 }
 
-const sp = {
-  section: { backgroundColor: '#1a1a1a' },
-  inner: { maxWidth: 860, margin: '0 auto', textAlign: 'center' },
-  row: { marginBottom: 48 },
-  stat: { display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' },
-  num: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 52, color: '#f59e0b', lineHeight: 1 },
-  label: { fontSize: 14, color: '#a8a29e', letterSpacing: '0.3px' },
-  divider: { width: 1, height: 60, backgroundColor: '#333' },
-  tagline: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 22, color: '#fff', fontStyle: 'italic', marginBottom: 12, lineHeight: 1.5 },
-  attribution: { fontSize: 13, color: '#666' },
-}
-
-const ct = {
-  section: { background: 'linear-gradient(135deg, #f59e0b 0%, #e08a00 100%)' },
-  inner: { maxWidth: 680, margin: '0 auto', textAlign: 'center' },
-  heading: { fontFamily: "'Georgia','Times New Roman',serif", color: '#1a1a1a', marginBottom: 16 },
-  sub: { fontSize: 18, color: 'rgba(26,26,26,0.7)', marginBottom: 36 },
-  btn: { padding: '18px 44px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 17, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif', marginBottom: 14 },
-  hint: { fontSize: 13, color: 'rgba(26,26,26,0.55)' },
+const cta = {
+  section: {
+    backgroundColor: BLUSH, padding: '80px 24px',
+    textAlign: 'center',
+  },
+  heading: {
+    fontFamily: font.serif, fontSize: 'clamp(26px, 4vw, 40px)',
+    fontWeight: 700, color: CHARCOAL, marginBottom: 14, lineHeight: 1.25,
+  },
+  sub: {
+    fontFamily: font.sans, fontSize: 17, color: CHARCOAL,
+    opacity: 0.7, marginBottom: 32,
+  },
+  btn: {
+    padding: '16px 48px', backgroundColor: WINE, color: '#fff',
+    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600,
+    cursor: 'pointer', fontFamily: font.sans,
+  },
 }
 
 const ft = {
-  footer: { backgroundColor: '#111', padding: '48px 24px 32px' },
-  inner: { maxWidth: 1100, margin: '0 auto' },
-  cols: { justifyContent: 'space-between', marginBottom: 40 },
-  brand: { display: 'flex', flexDirection: 'column', gap: 8 },
-  logo: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 20, color: '#fff', fontWeight: 'bold' },
-  tagline: { fontSize: 14, color: '#666', lineHeight: 1.5 },
-  email: { fontSize: 13, color: '#555' },
-  links: { display: 'flex', flexDirection: 'column', gap: 12 },
-  link: { fontSize: 14, color: '#888', textDecoration: 'none', cursor: 'pointer' },
-  bottom: { borderTop: '1px solid #222', paddingTop: 24 },
-  copy: { fontSize: 12, color: '#555' },
+  footer: {
+    backgroundColor: CHARCOAL, padding: '56px 28px 0',
+  },
+  cols: { maxWidth: 1100, margin: '0 auto', paddingBottom: 48 },
+  col: { display: 'flex', flexDirection: 'column', gap: 14 },
+  colCenter: { display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' },
+  logo: { fontFamily: font.serif, fontSize: 22, fontWeight: 700, color: '#fff' },
+  email: { fontFamily: font.sans, fontSize: 14, color: '#a89494', textDecoration: 'none' },
+  socialLabel: { fontFamily: font.sans, fontSize: 12, color: '#a89494', textTransform: 'uppercase', letterSpacing: '0.8px' },
+  socialRow: { display: 'flex', gap: 16 },
+  socialLink: { color: '#c8a8a8', textDecoration: 'none' },
+  link: { fontFamily: font.sans, fontSize: 14, color: '#c8a8a8', textDecoration: 'none' },
+  bottom: {
+    borderTop: '1px solid #4a3838',
+    padding: '20px 0', display: 'flex',
+    justifyContent: 'space-between', alignItems: 'center',
+    maxWidth: 1100, margin: '0 auto',
+    flexWrap: 'wrap', gap: 12,
+  },
+  copy: { fontFamily: font.sans, fontSize: 12, color: '#6a5858' },
+  legal: { display: 'flex', gap: 8, alignItems: 'center' },
+  legalLink: { fontFamily: font.sans, fontSize: 12, color: '#6a5858', textDecoration: 'none' },
+  legalDot: { color: '#4a3838' },
 }
 
 const m = {
-  overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  modal: { backgroundColor: '#fff', borderRadius: 16, padding: '40px 36px', width: '100%', maxWidth: 420, position: 'relative', maxHeight: '90vh', overflowY: 'auto' },
-  closeBtn: { position: 'absolute', top: 16, right: 16, background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', lineHeight: 1, padding: 4 },
-  envelopeIcon: { fontSize: 36, textAlign: 'center', marginBottom: 16 },
-  title: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 24, color: '#1a1a1a', textAlign: 'center', marginBottom: 6 },
-  sub: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 24, lineHeight: 1.5 },
+  overlay: {
+    position: 'fixed', inset: 0, zIndex: 2000,
+    backgroundColor: 'rgba(57,50,50,0.65)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: 20,
+  },
+  modal: {
+    backgroundColor: '#fff', borderRadius: 16, padding: '40px 36px',
+    width: '100%', maxWidth: 420, position: 'relative',
+    maxHeight: '90vh', overflowY: 'auto',
+    boxShadow: '0 20px 60px rgba(57,50,50,0.25)',
+  },
+  closeBtn: {
+    position: 'absolute', top: 16, right: 16,
+    background: 'transparent', border: 'none', fontSize: 18,
+    cursor: 'pointer', color: '#aaa', lineHeight: 1, padding: 4,
+  },
+  icon: { fontSize: 36, textAlign: 'center', marginBottom: 14 },
+  title: {
+    fontFamily: font.serif, fontSize: 24, fontWeight: 700,
+    color: CHARCOAL, textAlign: 'center', marginBottom: 6,
+  },
+  sub: { fontSize: 14, color: '#888', textAlign: 'center', marginBottom: 24, lineHeight: 1.5, fontFamily: font.sans },
   form: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: { fontSize: 13, fontWeight: 'bold', color: '#444', marginBottom: 4, marginTop: 12 },
-  input: { width: '100%', padding: '11px 14px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'Arial,sans-serif', outline: 'none' },
-  error: { backgroundColor: '#fef2f2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 8 },
-  submit: { marginTop: 20, padding: '14px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  footer: { textAlign: 'center', marginTop: 20, fontSize: 13, color: '#888' },
-  link: { color: '#f59e0b', cursor: 'pointer', fontWeight: 'bold' },
+  label: { fontSize: 13, fontWeight: 600, color: CHARCOAL, marginBottom: 4, marginTop: 12, fontFamily: font.sans },
+  input: {
+    width: '100%', padding: '11px 14px',
+    border: '1.5px solid #ddd', borderRadius: 8,
+    fontSize: 14, fontFamily: font.sans, outline: 'none',
+  },
+  error: {
+    backgroundColor: '#fdf2f2', color: '#8a2323', padding: '10px 14px',
+    borderRadius: 8, fontSize: 13, marginBottom: 4, fontFamily: font.sans,
+  },
+  submit: {
+    marginTop: 20, padding: '13px',
+    backgroundColor: WINE, color: '#fff', border: 'none',
+    borderRadius: 8, fontSize: 15, fontWeight: 600,
+    cursor: 'pointer', fontFamily: font.sans,
+  },
+  footer: { textAlign: 'center', marginTop: 18, fontSize: 13, color: '#888', fontFamily: font.sans },
+  footerLink: { color: WINE, cursor: 'pointer', fontWeight: 600 },
 }
 
 const mn = {
-  overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1500 },
-  drawer: { position: 'absolute', top: 0, right: 0, bottom: 0, width: 280, backgroundColor: '#1a1a1a', display: 'flex', flexDirection: 'column' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 16px', borderBottom: '1px solid #2a2a2a' },
-  brand: { fontFamily: "'Georgia','Times New Roman',serif", fontSize: 18, color: '#fff', fontWeight: 'bold' },
-  closeBtn: { background: 'transparent', border: 'none', color: '#888', fontSize: 20, cursor: 'pointer' },
-  links: { display: 'flex', flexDirection: 'column', padding: '20px', gap: 4, flex: 1, overflowY: 'auto' },
-  link: { fontSize: 16, color: '#e8e4de', textDecoration: 'none', padding: '12px 0', borderBottom: '1px solid #2a2a2a' },
-  linkSmall: { fontSize: 14, color: '#888', textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid #222' },
-  divider: { height: 1, backgroundColor: '#2a2a2a', margin: '8px 0' },
-  signUpBtn: { marginTop: 16, padding: '14px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif', textAlign: 'center' },
+  overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(57,50,50,0.55)', zIndex: 1500 },
+  drawer: {
+    position: 'absolute', top: 0, right: 0, bottom: 0, width: 300,
+    backgroundColor: CREAM,
+    boxShadow: '-4px 0 24px rgba(57,50,50,0.15)',
+    display: 'flex', flexDirection: 'column',
+  },
+  header: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '20px 20px 16px',
+    borderBottom: `1px solid ${BLUSH}`,
+  },
+  brand: { fontFamily: font.serif, fontSize: 20, fontWeight: 700, color: WINE },
+  closeBtn: {
+    background: 'transparent', border: 'none', fontSize: 20,
+    cursor: 'pointer', color: '#888',
+  },
+  body: {
+    display: 'flex', flexDirection: 'column', padding: '20px',
+    gap: 4, flex: 1, overflowY: 'auto',
+  },
+  signUpBtn: {
+    width: '100%', padding: '14px',
+    backgroundColor: WINE, color: '#fff', border: 'none',
+    borderRadius: 8, fontSize: 16, fontWeight: 600,
+    cursor: 'pointer', fontFamily: font.sans, textAlign: 'center',
+    marginBottom: 4,
+  },
+  signInLink: {
+    display: 'block', fontSize: 16, color: CHARCOAL,
+    textDecoration: 'none', padding: '12px 0',
+    borderBottom: `1px solid ${BLUSH}`, fontFamily: font.sans,
+    fontWeight: 500,
+  },
+  divider: { height: 1, backgroundColor: BLUSH, margin: '8px 0' },
+  link: {
+    fontSize: 15, color: CHARCOAL, textDecoration: 'none',
+    padding: '11px 0', borderBottom: `1px solid rgba(237,191,198,0.5)`,
+    fontFamily: font.sans,
+  },
+  linkSmall: {
+    fontSize: 13, color: '#888', textDecoration: 'none',
+    padding: '10px 0', borderBottom: `1px solid rgba(237,191,198,0.3)`,
+    fontFamily: font.sans,
+  },
 }
