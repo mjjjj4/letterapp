@@ -80,6 +80,7 @@ export default function SiteNav({ onSignUp }) {
                 </>
               )}
               <a href="/how-it-works" style={mn.link}>How it works</a>
+              <a href="/impact" style={mn.link}>💛 Our Impact</a>
               <a href="/faq" style={mn.link}>FAQ</a>
               <a href="/about" style={mn.link}>About</a>
               <a href="/contact" style={mn.link}>Contact</a>

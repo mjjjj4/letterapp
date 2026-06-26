@@ -18,21 +18,15 @@ export default function CharityBanner() {
     n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <a
-      href="https://nationalpcf.org"
-      target="_blank"
-      rel="noopener noreferrer"
-      style={s.banner}
-    >
+    <a href="/impact" style={s.banner}>
       <span style={s.heart}>💛</span>
       <span style={s.text}>
-        <span style={s.main}>5% of every capsule sealed goes to the </span>
-        <span style={s.org}>National Pediatric Cancer Foundation</span>
+        <span style={s.main}>5% of our profit goes towards fighting childhood cancer</span>
         {donated !== null && donated > 0 && (
-          <span style={s.counter}> &middot; We&rsquo;ve donated ${fmt(donated)}</span>
+          <span style={s.counter}> &middot; ${fmt(donated)} donated so far</span>
         )}
       </span>
-      <span style={s.arrow}>↗</span>
+      <span style={s.arrow}>→</span>
     </a>
   )
 }
