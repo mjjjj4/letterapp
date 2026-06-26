@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { supabase } from '../lib/supabase'
+import SiteNav from '../components/SiteNav'
+import SiteFooter from '../components/SiteFooter'
+
+const WINE = '#952323'
+const CREAM = '#FFE6E1'
+const BLUSH = '#EDBFC6'
+const CHARCOAL = '#393232'
+const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function Login() {
   const router = useRouter()
@@ -10,150 +19,117 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        router.push('/dashboard')
-      }
-    }
-    checkUser()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.push('/dashboard')
+    })
   }, [router])
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (loginError) {
-      setError(loginError.message)
-      setLoading(false)
-      return
-    }
-
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+    if (loginError) { setError(loginError.message); setLoading(false); return }
     router.push('/dashboard')
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Login to The Letter</h1>
-        <form onSubmit={handleLogin}>
-          {error && <div style={styles.error}>{error}</div>}
+    <>
+      <Head>
+        <title>Sign in — The Letter</title>
+      </Head>
 
-          <div style={styles.formGroup}>
-            <label htmlFor="email" style={styles.label}>Email</label>
+      <SiteNav />
+
+      <main style={s.main}>
+        <div style={s.card}>
+          <div style={s.icon}>✉</div>
+          <h1 style={s.title}>Welcome back</h1>
+          <p style={s.sub}>Sign in to read your capsules or write a new one.</p>
+
+          <form onSubmit={handleLogin} style={s.form}>
+            {error && <div style={s.error}>{error}</div>}
+
+            <label style={s.label}>Email</label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              required
-              disabled={loading}
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              style={s.input} placeholder="you@example.com"
+              required disabled={loading} autoFocus
             />
-          </div>
 
-          <div style={styles.formGroup}>
-            <label htmlFor="password" style={styles.label}>Password</label>
+            <label style={s.label}>Password</label>
             <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              required
-              disabled={loading}
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              style={s.input} placeholder="Your password"
+              required disabled={loading}
             />
-          </div>
 
-          <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              style={{ ...s.btn, opacity: loading ? 0.65 : 1 }}
+              disabled={loading}
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
 
-        <p style={styles.text}>
-          Don't have an account? <a href="/signup" style={styles.link}>Sign up</a>
-        </p>
-      </div>
-    </div>
+          <p style={s.footer}>
+            Don&rsquo;t have an account?{' '}
+            <a href="/signup" style={s.footerLink}>Sign up</a>
+          </p>
+        </div>
+      </main>
+
+      <SiteFooter />
+    </>
   )
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
-    fontFamily: 'Arial, sans-serif',
-    padding: '20px',
+const s = {
+  main: {
+    minHeight: 'calc(100vh - 64px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: CREAM, padding: '40px 20px',
   },
   card: {
-    backgroundColor: 'white',
-    padding: '40px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px',
+    backgroundColor: '#fff', borderRadius: 16,
+    padding: '44px 40px', width: '100%', maxWidth: 420,
+    boxShadow: '0 8px 40px rgba(149,35,35,0.08)',
+    border: `1px solid ${BLUSH}`,
   },
+  icon: { fontSize: 36, textAlign: 'center', marginBottom: 16 },
   title: {
-    fontSize: '24px',
-    marginBottom: '30px',
-    textAlign: 'center',
-    color: '#333',
+    fontFamily: F.serif, fontSize: 28, fontWeight: 700,
+    color: CHARCOAL, textAlign: 'center', marginBottom: 8,
   },
-  formGroup: {
-    marginBottom: '20px',
+  sub: {
+    fontFamily: F.sans, fontSize: 14, color: '#888',
+    textAlign: 'center', lineHeight: 1.5, marginBottom: 28,
   },
+  form: { display: 'flex', flexDirection: 'column', gap: 4 },
   label: {
-    display: 'block',
-    marginBottom: '8px',
-    fontSize: '14px',
-    fontWeight: 'bold',
-    color: '#333',
+    fontFamily: F.sans, fontSize: 13, fontWeight: 600,
+    color: CHARCOAL, marginTop: 14, marginBottom: 6,
   },
   input: {
-    width: '100%',
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    boxSizing: 'border-box',
-  },
-  button: {
-    width: '100%',
-    padding: '12px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    marginTop: '10px',
+    width: '100%', padding: '12px 14px',
+    border: `1.5px solid ${BLUSH}`, borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, outline: 'none', backgroundColor: '#fff',
+    transition: 'border-color 0.15s',
   },
   error: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: '12px',
-    borderRadius: '4px',
-    marginBottom: '20px',
-    fontSize: '14px',
+    backgroundColor: '#fdf2f2', color: '#8a2323',
+    padding: '10px 14px', borderRadius: 8,
+    fontSize: 13, marginBottom: 4, fontFamily: F.sans,
   },
-  text: {
-    textAlign: 'center',
-    marginTop: '20px',
-    fontSize: '14px',
-    color: '#666',
+  btn: {
+    marginTop: 22, padding: 14, width: '100%',
+    backgroundColor: WINE, color: '#fff', border: 'none',
+    borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
   },
-  link: {
-    color: '#007bff',
-    textDecoration: 'none',
+  footer: {
+    textAlign: 'center', marginTop: 20,
+    fontSize: 14, color: '#888', fontFamily: F.sans,
   },
+  footerLink: { color: WINE, fontWeight: 600, textDecoration: 'none' },
 }

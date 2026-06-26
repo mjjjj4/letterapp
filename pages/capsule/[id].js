@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Head from 'next/head'
 import { supabase } from '../../lib/supabase'
-import { calcPrice, loadCart, saveCart } from '../../lib/cart'
+import { loadCart, saveCart } from '../../lib/cart'
+import SiteNav from '../../components/SiteNav'
+import SiteFooter from '../../components/SiteFooter'
+
+const WINE = '#952323'
+const CREAM = '#FFE6E1'
+const BLUSH = '#EDBFC6'
+const CHARCOAL = '#393232'
+const F = { serif: "'Lora','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
 export default function CapsuleDetail() {
   const router = useRouter()
   const { id } = router.query
-  const [user, setUser] = useState(null)
   const [capsule, setCapsule] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -17,22 +25,15 @@ export default function CapsuleDetail() {
       try {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) { router.push('/'); return }
-        setUser(user)
         if (!id) return
 
-        const { data: capsuleArray, error: capsuleError } = await supabase
-          .from('capsules')
-          .select('*')
-          .eq('id', id)
-          .eq('user_id', user.id)
+        const { data: arr, error: capsuleError } = await supabase
+          .from('capsules').select('*').eq('id', id).eq('user_id', user.id)
 
-        if (capsuleError) {
-          setError(`Failed to load capsule: ${capsuleError.message}`)
-        } else if (!capsuleArray || capsuleArray.length === 0) {
-          setError('Capsule not found.')
-        } else {
-          setCapsule(capsuleArray[0])
-        }
+        if (capsuleError) setError(`Failed to load capsule: ${capsuleError.message}`)
+        else if (!arr || arr.length === 0) setError('Capsule not found.')
+        else setCapsule(arr[0])
+
         setLoading(false)
       } catch (err) {
         setError(`An error occurred: ${err.message}`)
@@ -47,22 +48,9 @@ export default function CapsuleDetail() {
   const formatDate = (ds) =>
     new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  const getStatusColor = (status) => {
-    if (status === 'draft') return '#ffc107'
-    if (status === 'sealed') return '#17a2b8'
-    if (status === 'delivered') return '#28a745'
-    return '#6c757d'
-  }
-
   const addToCart = () => {
     if (!capsule) return
-    const newItem = {
-      capsuleId: capsule.id,
-      title: capsule.title,
-      deliveryDate: '',
-      years: null,
-      price: null,
-    }
+    const newItem = { capsuleId: capsule.id, title: capsule.title, deliveryDate: '', years: null, price: null }
     const currentCart = loadCart()
     const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
     saveCart(newCart)
@@ -73,145 +61,195 @@ export default function CapsuleDetail() {
   const inCart = capsule && cart.some(x => x.capsuleId === capsule.id)
   const isDraft = capsule?.status === 'draft'
 
-  const navRight = (
-    <div style={st.navRight}>
-      <button
-        onClick={() => router.push('/cart')}
-        style={cart.length > 0 ? st.cartBtnActive : st.cartBtnEmpty}
-      >
-        {cart.length > 0 ? `Cart (${cart.length})` : 'Cart'}
-      </button>
-      <button onClick={() => router.push('/dashboard')} style={st.backButton}>
-        ← Dashboard
-      </button>
-    </div>
-  )
+  const statusColor = (status) => {
+    if (status === 'draft') return { bg: `${BLUSH}55`, text: WINE }
+    if (status === 'sealed') return { bg: '#e8f0f7', text: '#1a4a7a' }
+    if (status === 'delivered') return { bg: '#d1fae5', text: '#065f46' }
+    return { bg: '#eee', text: '#555' }
+  }
 
-  if (loading) return <div style={st.loading}>Loading...</div>
-
-  if (error) return (
-    <div style={st.container}>
-      <div style={st.navbar}><h1 style={st.navTitle}>The Letter</h1>{navRight}</div>
-      <div style={st.content}><div style={st.error}>{error}</div></div>
-    </div>
-  )
-
-  if (!capsule) return (
-    <div style={st.container}>
-      <div style={st.navbar}><h1 style={st.navTitle}>The Letter</h1>{navRight}</div>
-      <div style={st.content}><p style={st.errorText}>Capsule not found</p></div>
-    </div>
-  )
-
-  return (
-    <div style={st.container}>
-      <div style={st.navbar}>
-        <h1 style={st.navTitle}>The Letter</h1>
-        {navRight}
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CREAM }}>
+        <p style={{ fontFamily: F.sans, fontSize: 16, color: '#888' }}>Loading…</p>
       </div>
+    )
+  }
 
-      <div style={st.content}>
-        {/* Header */}
-        <div style={st.header}>
-          <h1 style={st.title}>{capsule.title}</h1>
-          <div style={st.metadata}>
-            <span style={{ ...st.statusBadge, backgroundColor: getStatusColor(capsule.status) }}>
-              {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
-            </span>
-            {capsule.status !== 'draft' && capsule.deliver_at && (
-              <span style={st.deliveryDate}>Delivery: {formatDate(capsule.deliver_at)}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Message */}
-        <div style={st.section}>
-          <h2 style={st.sectionTitle}>Your Message</h2>
-          <div style={st.messageBox}>
-            <p style={st.messageText}>{capsule.message}</p>
-          </div>
-        </div>
-
-        {/* Snapshot */}
-        {(capsule.age || capsule.city || capsule.favorite_song || capsule.favorite_show ||
-          capsule.future_vision || (capsule.personality_words && capsule.personality_words.length > 0)) && (
-          <div style={st.section}>
-            <h2 style={st.sectionTitle}>Snapshot of You</h2>
-            <div style={st.snapshotGrid}>
-              {capsule.age && <div style={st.snapshotItem}><h3 style={st.snapshotLabel}>Age</h3><p style={st.snapshotValue}>{capsule.age}</p></div>}
-              {capsule.city && <div style={st.snapshotItem}><h3 style={st.snapshotLabel}>City</h3><p style={st.snapshotValue}>{capsule.city}</p></div>}
-              {capsule.favorite_song && <div style={st.snapshotItem}><h3 style={st.snapshotLabel}>Favorite Song</h3><p style={st.snapshotValue}>{capsule.favorite_song}</p></div>}
-              {capsule.favorite_show && <div style={st.snapshotItem}><h3 style={st.snapshotLabel}>Favorite Show</h3><p style={st.snapshotValue}>{capsule.favorite_show}</p></div>}
-              {capsule.personality_words && capsule.personality_words.length > 0 && (
-                <div style={st.snapshotItem}><h3 style={st.snapshotLabel}>Personality</h3><p style={st.snapshotValue}>{capsule.personality_words.join(', ')}</p></div>
-              )}
-            </div>
-            {capsule.future_vision && (
-              <div style={st.futureVisionBox}>
-                <h3 style={st.futureVisionTitle}>Your Future Vision</h3>
-                <p style={st.futureVisionText}>{capsule.future_vision}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div style={st.section}>
-          <p style={st.createdDate}>Created on {formatDate(capsule.created_at)}</p>
-        </div>
-
-        {/* Actions — draft only */}
-        {isDraft && (
-          <div style={st.bottomActions}>
-            {inCart ? (
-              <button onClick={() => router.push('/cart')} style={st.viewCartBtn}>
-                In cart — View cart &rarr;
-              </button>
-            ) : (
-              <button onClick={addToCart} style={st.sealButtonBottom}>
-                Seal &amp; Pay
-              </button>
-            )}
-            <button onClick={() => router.push(`/capsule/${capsule.id}/edit`)} style={st.editButtonBottom}>
-              Edit Capsule
+  if (error || !capsule) {
+    return (
+      <>
+        <SiteNav />
+        <div style={{ minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontFamily: F.serif, fontSize: 20, color: CHARCOAL, marginBottom: 16 }}>
+              {error || 'Capsule not found'}
+            </p>
+            <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', backgroundColor: WINE, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontFamily: F.sans }}>
+              Back to dashboard
             </button>
           </div>
-        )}
+        </div>
+        <SiteFooter />
+      </>
+    )
+  }
+
+  const sc = statusColor(capsule.status)
+
+  return (
+    <>
+      <Head>
+        <title>{capsule.title} — The Letter</title>
+      </Head>
+
+      <SiteNav />
+
+      <div style={st.page}>
+        <div style={st.content}>
+
+          {/* Header */}
+          <div style={st.header}>
+            <div style={st.meta}>
+              <span style={{ ...st.statusBadge, backgroundColor: sc.bg, color: sc.text }}>
+                {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
+              </span>
+              {capsule.status !== 'draft' && capsule.deliver_at && (
+                <span style={st.deliveryDate}>Opens {formatDate(capsule.deliver_at)}</span>
+              )}
+            </div>
+            <h1 style={st.title}>{capsule.title}</h1>
+            <p style={st.created}>Created {formatDate(capsule.created_at)}</p>
+          </div>
+
+          {/* Message */}
+          <div style={st.section}>
+            <h2 style={st.sectionTitle}>Your message</h2>
+            <div style={st.messageBox}>
+              <p style={st.messageText}>{capsule.message}</p>
+            </div>
+          </div>
+
+          {/* Snapshot */}
+          {(capsule.age || capsule.city || capsule.favorite_song || capsule.favorite_show ||
+            capsule.future_vision || (capsule.personality_words && capsule.personality_words.length > 0)) && (
+            <div style={st.section}>
+              <h2 style={st.sectionTitle}>Snapshot of you</h2>
+              <div style={st.snapshotGrid}>
+                {capsule.age && <div style={st.snapshotItem}><p style={st.snapshotLabel}>Age</p><p style={st.snapshotValue}>{capsule.age}</p></div>}
+                {capsule.city && <div style={st.snapshotItem}><p style={st.snapshotLabel}>City</p><p style={st.snapshotValue}>{capsule.city}</p></div>}
+                {capsule.favorite_song && <div style={st.snapshotItem}><p style={st.snapshotLabel}>Favorite song</p><p style={st.snapshotValue}>{capsule.favorite_song}</p></div>}
+                {capsule.favorite_show && <div style={st.snapshotItem}><p style={st.snapshotLabel}>Favorite show</p><p style={st.snapshotValue}>{capsule.favorite_show}</p></div>}
+                {capsule.personality_words?.length > 0 && (
+                  <div style={st.snapshotItem}><p style={st.snapshotLabel}>Personality</p><p style={st.snapshotValue}>{capsule.personality_words.join(', ')}</p></div>
+                )}
+              </div>
+              {capsule.future_vision && (
+                <div style={st.visionBox}>
+                  <p style={st.visionLabel}>Your future vision</p>
+                  <p style={st.visionText}>{capsule.future_vision}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          {isDraft && (
+            <div style={st.actions}>
+              {inCart ? (
+                <button onClick={() => router.push('/cart')} style={st.viewCartBtn}>
+                  In cart — View cart →
+                </button>
+              ) : (
+                <button onClick={addToCart} style={st.sealBtn}>
+                  Seal &amp; Pay
+                </button>
+              )}
+              <button onClick={() => router.push('/dashboard')} style={st.backBtn}>
+                ← Back to dashboard
+              </button>
+            </div>
+          )}
+
+          {!isDraft && (
+            <div style={{ marginBottom: 40 }}>
+              <button onClick={() => router.push('/dashboard')} style={st.backBtn}>
+                ← Back to dashboard
+              </button>
+            </div>
+          )}
+
+        </div>
       </div>
-    </div>
+
+      <SiteFooter />
+    </>
   )
 }
 
 const st = {
-  container: { minHeight: '100vh', backgroundColor: '#f5f5f5', fontFamily: 'Arial, sans-serif' },
-  loading: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#666', fontFamily: 'Arial, sans-serif' },
-  navbar: { backgroundColor: 'white', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  navTitle: { fontSize: '24px', margin: 0, color: '#333', fontWeight: 'bold' },
-  navRight: { display: 'flex', alignItems: 'center', gap: '10px' },
-  cartBtnActive: { padding: '8px 16px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  cartBtnEmpty: { padding: '8px 16px', backgroundColor: 'transparent', color: '#888', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontFamily: 'Arial,sans-serif' },
-  backButton: { padding: '8px 16px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  content: { maxWidth: '900px', margin: '20px auto', padding: '0 16px' },
-  header: { backgroundColor: 'white', padding: '24px 20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '20px' },
-  title: { fontSize: '28px', color: '#333', margin: '0 0 12px 0', wordBreak: 'break-word', lineHeight: '1.3' },
-  metadata: { display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' },
-  statusBadge: { padding: '6px 16px', borderRadius: '20px', color: 'white', fontSize: '12px', fontWeight: 'bold' },
-  deliveryDate: { fontSize: '14px', color: '#666' },
-  bottomActions: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '40px' },
-  sealButtonBottom: { width: '100%', padding: '18px', backgroundColor: '#1a1a1a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold' },
-  viewCartBtn: { width: '100%', padding: '18px', backgroundColor: '#f59e0b', color: '#1a1a1a', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' },
-  editButtonBottom: { width: '100%', padding: '14px', backgroundColor: 'white', color: '#333', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold' },
-  section: { backgroundColor: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '20px' },
-  sectionTitle: { fontSize: '20px', fontWeight: 'bold', color: '#333', marginTop: 0, marginBottom: '20px' },
-  messageBox: { padding: '20px', backgroundColor: '#f9f9f9', borderLeft: '4px solid #007bff', borderRadius: '4px' },
-  messageText: { fontSize: '16px', color: '#333', lineHeight: '1.8', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
-  snapshotGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' },
-  snapshotItem: { padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '4px', borderLeft: '4px solid #28a745' },
-  snapshotLabel: { fontSize: '12px', fontWeight: 'bold', color: '#666', margin: '0 0 8px 0', textTransform: 'uppercase' },
-  snapshotValue: { fontSize: '16px', color: '#333', margin: 0, fontWeight: 'bold' },
-  futureVisionBox: { marginTop: '20px', padding: '20px', backgroundColor: '#f0f7ff', borderRadius: '4px', borderLeft: '4px solid #007bff' },
-  futureVisionTitle: { fontSize: '14px', fontWeight: 'bold', color: '#0056b3', margin: '0 0 10px 0' },
-  futureVisionText: { fontSize: '16px', color: '#333', lineHeight: '1.8', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
-  createdDate: { fontSize: '12px', color: '#999', textAlign: 'center', margin: 0 },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: '15px', borderRadius: '4px', marginTop: '20px' },
-  errorText: { fontSize: '16px', color: '#666', textAlign: 'center', padding: '40px' },
+  page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
+  content: { maxWidth: 760, margin: '0 auto', padding: '32px 16px 80px' },
+
+  header: {
+    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
+    borderRadius: 14, padding: '28px 28px 24px', marginBottom: 20,
+  },
+  meta: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 },
+  statusBadge: {
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700,
+    padding: '3px 12px', borderRadius: 20,
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
+  deliveryDate: { fontFamily: F.sans, fontSize: 13, color: '#888' },
+  title: {
+    fontFamily: F.serif, fontSize: 28, fontWeight: 700,
+    color: CHARCOAL, margin: '0 0 8px', lineHeight: 1.3, wordBreak: 'break-word',
+  },
+  created: { fontFamily: F.sans, fontSize: 13, color: '#aaa', margin: 0 },
+
+  section: {
+    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
+    borderRadius: 14, padding: '24px 28px', marginBottom: 20,
+  },
+  sectionTitle: {
+    fontFamily: F.serif, fontSize: 18, fontWeight: 700,
+    color: CHARCOAL, marginBottom: 16,
+  },
+  messageBox: { borderLeft: `3px solid ${BLUSH}`, paddingLeft: 16 },
+  messageText: {
+    fontFamily: F.serif, fontSize: 16, color: CHARCOAL,
+    lineHeight: 1.85, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+  },
+
+  snapshotGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: 14, marginBottom: 16,
+  },
+  snapshotItem: {
+    backgroundColor: CREAM, border: `1px solid ${BLUSH}`,
+    borderRadius: 8, padding: '12px 14px',
+  },
+  snapshotLabel: { fontFamily: F.sans, fontSize: 10, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px' },
+  snapshotValue: { fontFamily: F.sans, fontSize: 15, color: CHARCOAL, margin: 0, fontWeight: 600 },
+  visionBox: {
+    backgroundColor: CREAM, border: `1px solid ${BLUSH}`,
+    borderRadius: 8, padding: '16px 18px',
+  },
+  visionLabel: { fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE, textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' },
+  visionText: { fontFamily: F.serif, fontSize: 15, color: CHARCOAL, lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' },
+
+  actions: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 },
+  sealBtn: {
+    width: '100%', padding: 18, backgroundColor: WINE, color: '#fff',
+    border: 'none', borderRadius: 10, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
+  },
+  viewCartBtn: {
+    width: '100%', padding: 16, backgroundColor: 'transparent', color: WINE,
+    border: `2px solid ${WINE}`, borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
+  },
+  backBtn: {
+    width: '100%', padding: 14, backgroundColor: '#fff', color: '#666',
+    border: `1px solid ${BLUSH}`, borderRadius: 10, fontSize: 14, fontFamily: F.sans,
+  },
 }
