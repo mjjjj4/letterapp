@@ -363,7 +363,7 @@ const cs = {
     fontFamily: F.sans, whiteSpace: 'nowrap', flexShrink: 0,
   },
 
-  dateSection: { marginBottom: 12, width: '100%', overflow: 'hidden' },
+  dateSection: { marginBottom: 12, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' },
   dateLabel: {
     display: 'block', fontFamily: F.sans, fontSize: 11, fontWeight: 700,
     color: MUTED, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -372,19 +372,22 @@ const cs = {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
     padding: '10px 12px',
     border: `1.5px dashed ${BORDER}`, borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: CREAM,
+    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: CREAM,
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   dateInputValid: {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
     padding: '10px 12px',
     border: '1.5px solid #10b981', borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#f0fdf4',
+    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#f0fdf4',
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   dateInputError: {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
     padding: '10px 12px',
     border: '1.5px solid #dc2626', borderRadius: 8,
-    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fef2f2',
+    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fef2f2',
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   dateError: { fontFamily: F.sans, fontSize: 12, color: '#dc2626', margin: '6px 0 0' },
 
