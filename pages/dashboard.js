@@ -163,8 +163,8 @@ export default function Dashboard() {
                             Seal &amp; Pay
                           </button>
                         )}
-                        <button onClick={() => router.push(`/capsule/${c.id}`)} style={s.editBtn}>
-                          Edit
+                        <button onClick={() => router.push(`/create?id=${c.id}&mode=edit`)} style={s.editBtn}>
+                          Edit draft
                         </button>
                         <button
                           onClick={() => deleteDraft(c)}

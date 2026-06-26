@@ -19,6 +19,8 @@ export default function CreateCapsule() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [editMode, setEditMode] = useState(false)
+  const [editCapsuleId, setEditCapsuleId] = useState(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -32,6 +34,7 @@ export default function CreateCapsule() {
   })
   const [file, setFile] = useState(null)
 
+  // Auth check
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user }, error }) => {
       if (error || !user) { router.push('/'); return }
@@ -39,6 +42,44 @@ export default function CreateCapsule() {
       setLoading(false)
     })
   }, [router])
+
+  // Load existing capsule once router is ready and user is authenticated
+  useEffect(() => {
+    if (!router.isReady || !user) return
+    const { id, mode } = router.query
+    if (mode === 'edit' && id) {
+      setEditMode(true)
+      setEditCapsuleId(id)
+      loadCapsuleForEdit(id)
+    }
+  }, [router.isReady, user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadCapsuleForEdit = async (capsuleId) => {
+    const { data, error } = await supabase
+      .from('capsules')
+      .select('*')
+      .eq('id', capsuleId)
+      .eq('status', 'draft')
+      .single()
+
+    if (error || !data) {
+      setError('Could not load this capsule for editing. It may no longer be a draft.')
+      return
+    }
+
+    setFormData({
+      title: data.title || '',
+      message: data.message || '',
+      age: data.age != null ? String(data.age) : '',
+      city: data.city || '',
+      favorite_song: data.favorite_song || '',
+      favorite_show: data.favorite_show || '',
+      future_vision: data.future_vision || '',
+      personality_words: Array.isArray(data.personality_words)
+        ? data.personality_words.join(', ')
+        : (data.personality_words || ''),
+    })
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -75,34 +116,54 @@ export default function CreateCapsule() {
     e.preventDefault()
     setError('')
     setSubmitting(true)
+
     if (!formData.title || !formData.message) {
       setError('Title and message are required')
       setSubmitting(false)
       return
     }
+
     try {
       if (!user?.id) { setError('Authentication error. Please sign in again.'); setSubmitting(false); return }
-      const filePath = file ? await uploadFile(file, user.id) : null
+
       const capsuleData = {
-        user_id: user.id,
         title: formData.title,
         message: formData.message,
-        deliver_at: '2099-12-31',
-        status: 'draft',
         age: formData.age ? parseInt(formData.age) : null,
         city: formData.city || null,
         favorite_song: formData.favorite_song || null,
         favorite_show: formData.favorite_show || null,
         future_vision: formData.future_vision || null,
         personality_words: formData.personality_words
-          ? formData.personality_words.split(',').map(w => w.trim())
+          ? formData.personality_words.split(',').map(w => w.trim()).filter(Boolean)
           : null,
       }
-      const { error: insertError } = await supabase.from('capsules').insert([capsuleData]).select()
-      if (insertError) throw new Error(`Failed to save capsule: ${insertError.message}`)
+
+      if (editMode && editCapsuleId) {
+        const { error: updateError } = await supabase
+          .from('capsules')
+          .update(capsuleData)
+          .eq('id', editCapsuleId)
+          .eq('status', 'draft')
+        if (updateError) throw new Error(`Failed to update: ${updateError.message}`)
+      } else {
+        const filePath = file ? await uploadFile(file, user.id) : null
+        const { error: insertError } = await supabase
+          .from('capsules')
+          .insert([{
+            ...capsuleData,
+            user_id: user.id,
+            deliver_at: '2099-12-31',
+            status: 'draft',
+            ...(filePath ? { file_path: filePath } : {}),
+          }])
+          .select()
+        if (insertError) throw new Error(`Failed to save capsule: ${insertError.message}`)
+      }
+
       router.push('/dashboard')
     } catch (err) {
-      setError(err.message || 'Failed to create capsule.')
+      setError(err.message || 'Failed to save capsule.')
       setSubmitting(false)
     }
   }
@@ -118,7 +179,7 @@ export default function CreateCapsule() {
   return (
     <>
       <Head>
-        <title>Create Capsule — The Letter</title>
+        <title>{editMode ? 'Edit Capsule' : 'Create Capsule'} — The Letter</title>
       </Head>
 
       <SiteNav />
@@ -127,8 +188,19 @@ export default function CreateCapsule() {
         <div style={s.container}>
 
           <div style={s.header}>
-            <h1 style={s.pageTitle}>Write your capsule</h1>
-            <p style={s.pageSub}>Tell your future self everything they need to remember about today.</p>
+            {editMode && (
+              <button onClick={() => router.push('/dashboard')} style={s.backLink}>
+                ← Back to dashboard
+              </button>
+            )}
+            <h1 style={s.pageTitle}>
+              {editMode ? 'Edit your capsule' : 'Write your capsule'}
+            </h1>
+            <p style={s.pageSub}>
+              {editMode
+                ? 'Update any details below, then save when you\'re done.'
+                : 'Tell your future self everything they need to remember about today.'}
+            </p>
           </div>
 
           {error && <div style={s.error}>{error}</div>}
@@ -230,7 +302,7 @@ export default function CreateCapsule() {
                 Cancel
               </button>
               <button type="submit" style={{ ...s.submitBtn, opacity: submitting ? 0.65 : 1 }} disabled={submitting}>
-                {submitting ? 'Saving…' : 'Save capsule'}
+                {submitting ? 'Saving…' : editMode ? 'Update Draft' : 'Save capsule'}
               </button>
             </div>
 
@@ -248,6 +320,11 @@ const s = {
   container: { maxWidth: 720, margin: '0 auto', padding: '40px 20px 0' },
 
   header: { marginBottom: 32 },
+  backLink: {
+    display: 'inline-block', marginBottom: 16,
+    fontFamily: F.sans, fontSize: 13, color: MUTED,
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+  },
   pageTitle: { fontFamily: F.serif, fontSize: 32, fontWeight: 600, color: MAROON, marginBottom: 8 },
   pageSub: { fontFamily: F.sans, fontSize: 15, color: MUTED, lineHeight: 1.5 },
 
@@ -268,7 +345,7 @@ const s = {
   row: { display: 'flex', gap: 16, flexWrap: 'wrap' },
   label: { fontFamily: F.sans, fontSize: 13, fontWeight: 600, color: INK, display: 'block', marginBottom: 6 },
   input: {
-    width: '100%', padding: '11px 14px',
+    display: 'block', width: '100%', padding: '11px 14px',
     border: `1.5px solid ${BORDER}`, borderRadius: 8,
     fontSize: 14, fontFamily: F.sans, outline: 'none',
     backgroundColor: CREAM, boxSizing: 'border-box',
