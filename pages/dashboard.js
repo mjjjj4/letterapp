@@ -195,6 +195,7 @@ export default function Dashboard() {
                         <div style={s.sealedTop}>
                           <span style={s.lockIcon}>🔒</span>
                           <span style={s.sealedBadge}>Sealed</span>
+                          {c.is_founder_promo && <span style={s.founderBadge}>Founder Promo</span>}
                         </div>
                         <h3 style={s.sealedTitle}>{c.title}</h3>
                         <p style={s.sealedDate}>Opens {formatDate(c.deliver_at)}</p>
@@ -226,7 +227,10 @@ export default function Dashboard() {
                   <div key={c.id} style={s.deliveredCard}>
                     <div style={s.deliveredHeader}>
                       <div style={{ flex: 1 }}>
-                        <span style={s.deliveredBadge}>Delivered</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
+                          <span style={s.deliveredBadge}>Delivered</span>
+                          {c.is_founder_promo && <span style={s.founderBadge}>Founder Promo</span>}
+                        </div>
                         <h3 style={s.deliveredTitle}>{c.title}</h3>
                         <p style={s.deliveredDate}>Delivered {formatDate(c.deliver_at)}</p>
                       </div>
@@ -370,6 +374,11 @@ const s = {
     backgroundColor: '#e8f0f7', padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
+  founderBadge: {
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE,
+    backgroundColor: `${BLUSH}55`, padding: '3px 10px', borderRadius: 20,
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
   sealedTitle: {
     fontFamily: F.serif, fontSize: 17, fontWeight: 700,
     color: '#555', margin: '0 0 4px', wordBreak: 'break-word',
@@ -398,9 +407,9 @@ const s = {
     alignItems: 'flex-start', gap: 12, marginBottom: 16,
   },
   deliveredBadge: {
-    fontFamily: F.sans, display: 'inline-block', fontSize: 11, fontWeight: 700,
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700,
     color: '#065f46', backgroundColor: '#d1fae5',
-    padding: '3px 10px', borderRadius: 20, marginBottom: 8,
+    padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
   deliveredTitle: {

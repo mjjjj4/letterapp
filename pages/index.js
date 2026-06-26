@@ -13,6 +13,10 @@ const BANNERS = [
     headline: null,
   },
   {
+    bg: 'linear-gradient(150deg, #6b1010 0%, #952323 55%, #7a1c1c 100%)',
+    founderPromo: true,
+  },
+  {
     bg: 'linear-gradient(160deg, #1e0808 0%, #2c1010 50%, #3d1515 100%)',
     overlay: true,
     headline: 'Preserve your memories',
@@ -136,7 +140,7 @@ export default function Home() {
           >
             {b.overlay && <div style={hero.overlay} />}
 
-            {/* Banner 1 — full CTA */}
+            {/* Banner 1 — main CTA */}
             {i === 0 && (
               <div style={hero.inner}>
                 <p style={hero.logoLabel}>The Letter</p>
@@ -151,8 +155,23 @@ export default function Home() {
               </div>
             )}
 
-            {/* Banners 2–4 — headline only, no CTA */}
-            {i > 0 && (
+            {/* Banner 2 — Founder Promo */}
+            {b.founderPromo && (
+              <div style={hero.inner}>
+                <p style={hero.promoEyebrow}>Limited time offer</p>
+                <h2 style={hero.promoHeadline}>Founder Promotion</h2>
+                <p style={hero.promoSub}>
+                  Seal a capsule opening in 1–6 months<br className="no-mobile" />
+                  and get it <em>free</em>
+                </p>
+                <button onClick={openModal} style={hero.promoCta}>
+                  {user ? 'Create a capsule →' : 'Create your first capsule →'}
+                </button>
+              </div>
+            )}
+
+            {/* Remaining banners — headline only */}
+            {!b.founderPromo && i > 0 && b.headline && (
               <div style={hero.inner}>
                 <h2 style={hero.overlayHeadline}>{b.headline}</h2>
               </div>
@@ -319,6 +338,24 @@ const hero = {
     padding: '14px 40px', backgroundColor: WINE, color: '#fff',
     border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 600,
     fontFamily: F.sans, letterSpacing: '0.3px',
+  },
+  promoEyebrow: {
+    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: '#f5b8b8',
+    textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 14,
+  },
+  promoHeadline: {
+    fontFamily: F.serif, fontSize: 'clamp(36px,6vw,58px)',
+    fontWeight: 700, color: '#fff', lineHeight: 1.1, marginBottom: 18,
+    textShadow: '0 2px 20px rgba(0,0,0,0.25)',
+  },
+  promoSub: {
+    fontFamily: F.sans, fontSize: 'clamp(15px,2vw,18px)',
+    color: '#fde8e8', lineHeight: 1.7, marginBottom: 32, fontWeight: 300,
+  },
+  promoCta: {
+    padding: '14px 40px', backgroundColor: '#fff', color: WINE,
+    border: 'none', borderRadius: 6, fontSize: 16, fontWeight: 700,
+    fontFamily: F.sans, letterSpacing: '0.2px',
   },
   arrow: {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 10,

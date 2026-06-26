@@ -39,10 +39,14 @@ export default function CheckoutSuccess() {
       <div style={ss.page}>
         <div style={ss.body}>
           <div style={ss.card}>
-            <div style={ss.iconWrap}>🔒</div>
-            <h1 style={ss.title}>Your capsules are sealed!</h1>
+            <div style={ss.iconWrap}>{order?.isFounderPromo ? '🎉' : '🔒'}</div>
+            <h1 style={ss.title}>
+              {order?.isFounderPromo ? 'Your capsule is sealed — free!' : 'Your capsules are sealed!'}
+            </h1>
             <p style={ss.subtitle}>
-              They&rsquo;ll arrive in your inbox on the dates you chose. Don&rsquo;t peek — future you is looking forward to it.
+              {order?.isFounderPromo
+                ? "Sealed as a Founder member. It'll arrive in your inbox on the date you chose."
+                : "They'll arrive in your inbox on the dates you chose. Don't peek — future you is looking forward to it."}
             </p>
 
             {order?.cartItems?.length > 0 && (
@@ -55,15 +59,21 @@ export default function CheckoutSuccess() {
                       <div style={ss.itemLeft}>
                         <p style={ss.itemTitle}>{item.title}</p>
                         <p style={ss.itemDate}>Delivers {formatDate(item.deliveryDate)}</p>
-                        <p style={ss.itemYears}>{item.years} year{item.years !== 1 ? 's' : ''} × $1.85/year</p>
+                        <p style={ss.itemYears}>
+                          {item.isFounderPromo ? 'Founder Promotion' : `${item.years} year${item.years !== 1 ? 's' : ''} × $1.85/year`}
+                        </p>
                       </div>
-                      <p style={ss.itemPrice}>${item.price.toFixed(2)}</p>
+                      <p style={ss.itemPrice}>
+                        {item.isFounderPromo ? 'FREE' : `$${(item.price || 0).toFixed(2)}`}
+                      </p>
                     </div>
                   ))}
                 </div>
                 <div style={ss.totalRow}>
-                  <span style={ss.totalLabel}>Total charged</span>
-                  <span style={ss.totalAmount}>${order.total.toFixed(2)}</span>
+                  <span style={ss.totalLabel}>{order.isFounderPromo ? 'Total' : 'Total charged'}</span>
+                  <span style={ss.totalAmount}>
+                    {order.isFounderPromo ? 'FREE' : `$${(order.total || 0).toFixed(2)}`}
+                  </span>
                 </div>
               </>
             )}

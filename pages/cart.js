@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { supabase } from '../lib/supabase'
-import { calcPrice, describeTime, getMinDate, loadCart, saveCart } from '../lib/cart'
+import { calcPrice, getPromoInfo, describeTime, getMinDate, loadCart, saveCart } from '../lib/cart'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
@@ -40,19 +40,40 @@ export default function Cart() {
   }
 
   const updateDate = (capsuleId, dateStr) => {
-    const pricing = calcPrice(dateStr)
+    const info = getPromoInfo(dateStr)
+    let years = null
+    let price = null
+    let isFounderPromo = false
+    let dateError = null
+
+    if (!dateStr) {
+      // no date selected
+    } else if (info?.tooSoon) {
+      dateError = 'Must wait at least 1 month from today'
+    } else if (info?.promo) {
+      isFounderPromo = true
+      price = 0
+    } else if (info?.standard) {
+      const pricing = calcPrice(dateStr)
+      if (pricing) { years = pricing.years; price = pricing.price }
+    }
+
     setCart(prev => {
       const updated = prev.map(item => {
         if (item.capsuleId !== capsuleId) return item
-        return { ...item, deliveryDate: dateStr, years: pricing?.years ?? null, price: pricing?.price ?? null }
+        return { ...item, deliveryDate: dateStr, years, price, isFounderPromo, dateError }
       })
       saveCart(updated)
       return updated
     })
   }
 
-  const allDatesSet = cart.length > 0 && cart.every(item => item.deliveryDate && item.price)
+  // An item is "ready" if it has a date, no error, and price is set (0 is valid for promo)
+  const allDatesSet = cart.length > 0 && cart.every(
+    item => item.deliveryDate && !item.dateError && item.price !== null
+  )
   const total = +(cart.reduce((sum, item) => sum + (item.price || 0), 0)).toFixed(2)
+  const allPromo = cart.length > 0 && cart.every(item => item.isFounderPromo)
 
   const handleCheckout = async () => {
     if (!allDatesSet || !user) return
@@ -67,7 +88,10 @@ export default function Cart() {
       const data = await response.json()
       if (!response.ok) { setError(data.error || 'Failed to create checkout session'); setCheckingOut(false); return }
       try {
-        localStorage.setItem('pendingOrder', JSON.stringify({ cartItems: cart, total, timestamp: new Date().toISOString() }))
+        localStorage.setItem('pendingOrder', JSON.stringify({
+          cartItems: cart, total, isFounderPromo: allPromo,
+          timestamp: new Date().toISOString(),
+        }))
       } catch {}
       window.location.href = data.url
     } catch (err) {
@@ -112,12 +136,19 @@ export default function Cart() {
             </div>
           ) : (
             <>
+              {/* Promo banner */}
+              <div style={cs.promoBanner}>
+                <span style={cs.promoBannerIcon}>🎉</span>
+                <p style={cs.promoBannerText}>
+                  <strong>Founder Promotion:</strong> Select a delivery date 1–6 months from today and seal your capsule for <strong>free</strong>.
+                </p>
+              </div>
+
               {error && <div style={cs.errorBox}>{error}</div>}
 
               <div style={cs.itemList}>
                 {cart.map(item => {
-                  const pricing = item.deliveryDate ? calcPrice(item.deliveryDate) : null
-                  const hasValidDate = !!(item.deliveryDate && pricing)
+                  const hasValidDate = !!(item.deliveryDate && !item.dateError && item.price !== null)
 
                   return (
                     <div key={item.capsuleId} style={cs.cartItem}>
@@ -133,34 +164,51 @@ export default function Cart() {
                           min={getMinDate()}
                           value={item.deliveryDate || ''}
                           onChange={e => updateDate(item.capsuleId, e.target.value)}
-                          style={hasValidDate ? cs.dateInputValid : cs.dateInputEmpty}
+                          style={
+                            item.dateError ? cs.dateInputError
+                            : hasValidDate ? cs.dateInputValid
+                            : cs.dateInputEmpty
+                          }
                         />
-                        {item.deliveryDate && !pricing && (
-                          <p style={cs.dateError}>Please select a date at least 1 month in the future.</p>
+                        {item.dateError && (
+                          <p style={cs.dateError}>{item.dateError}</p>
                         )}
                       </div>
 
                       {hasValidDate && (
-                        <div style={cs.priceBreakdown}>
-                          <div style={cs.priceRow}>
-                            <span style={cs.priceLabel}>Delivery</span>
-                            <span style={cs.priceValue}>{formatDate(item.deliveryDate)}</span>
+                        item.isFounderPromo ? (
+                          <div style={cs.promoBreakdown}>
+                            <div style={cs.promoRow}>
+                              <div>
+                                <p style={cs.promoTag}>🎉 Founder Promo</p>
+                                <p style={cs.promoDelivery}>Delivers {formatDate(item.deliveryDate)}</p>
+                                <p style={cs.promoWindow}>{describeTime(item.deliveryDate)} from today</p>
+                              </div>
+                              <span style={cs.promoFree}>FREE</span>
+                            </div>
                           </div>
-                          <div style={cs.priceRow}>
-                            <span style={cs.priceLabel}>Storage</span>
-                            <span style={cs.priceValue}>{describeTime(item.deliveryDate)}</span>
+                        ) : (
+                          <div style={cs.priceBreakdown}>
+                            <div style={cs.priceRow}>
+                              <span style={cs.priceLabel}>Delivery</span>
+                              <span style={cs.priceValue}>{formatDate(item.deliveryDate)}</span>
+                            </div>
+                            <div style={cs.priceRow}>
+                              <span style={cs.priceLabel}>Storage</span>
+                              <span style={cs.priceValue}>{describeTime(item.deliveryDate)}</span>
+                            </div>
+                            <div style={cs.priceRow}>
+                              <span style={cs.priceLabel}>Rate</span>
+                              <span style={cs.priceValue}>$1.85/year</span>
+                            </div>
+                            <div style={{ ...cs.priceRow, borderTop: `1px solid ${BLUSH}`, paddingTop: 10, marginTop: 4 }}>
+                              <span style={{ ...cs.priceLabel, fontWeight: 700, color: CHARCOAL }}>
+                                {item.years} yr &times; $1.85
+                              </span>
+                              <span style={cs.itemPrice}>${item.price.toFixed(2)}</span>
+                            </div>
                           </div>
-                          <div style={cs.priceRow}>
-                            <span style={cs.priceLabel}>Rate</span>
-                            <span style={cs.priceValue}>$1.85/year</span>
-                          </div>
-                          <div style={{ ...cs.priceRow, borderTop: `1px solid ${BLUSH}`, paddingTop: 10, marginTop: 4 }}>
-                            <span style={{ ...cs.priceLabel, fontWeight: 700, color: CHARCOAL }}>
-                              {pricing.years} yr &times; $1.85
-                            </span>
-                            <span style={cs.itemPrice}>${pricing.price.toFixed(2)}</span>
-                          </div>
-                        </div>
+                        )
                       )}
 
                       {!item.deliveryDate && (
@@ -175,7 +223,9 @@ export default function Cart() {
                 <div style={cs.summaryHeader}>
                   <span style={cs.summaryCount}>{cart.length} capsule{cart.length !== 1 ? 's' : ''}</span>
                   {allDatesSet ? (
-                    <span style={cs.summaryTotal}>${total.toFixed(2)}</span>
+                    <span style={cs.summaryTotal}>
+                      {total === 0 ? 'FREE' : `$${total.toFixed(2)}`}
+                    </span>
                   ) : (
                     <span style={cs.summaryPending}>Set all dates to see total</span>
                   )}
@@ -184,10 +234,12 @@ export default function Cart() {
                   <p style={cs.summaryBreakdown}>
                     {cart.map((item, i) => (
                       <span key={item.capsuleId}>
-                        {item.years}yr × $1.85{i < cart.length - 1 ? ' + ' : ''}
+                        {item.isFounderPromo ? 'Founder Promo' : `${item.years}yr × $1.85`}
+                        {i < cart.length - 1 ? ' + ' : ''}
                       </span>
                     ))}
-                    {' = '}<strong>${total.toFixed(2)}</strong>
+                    {' = '}
+                    <strong>{total === 0 ? 'FREE' : `$${total.toFixed(2)}`}</strong>
                   </p>
                 )}
               </div>
@@ -207,17 +259,22 @@ export default function Cart() {
                   }}
                 >
                   {checkingOut
-                    ? 'Redirecting to payment…'
-                    : allDatesSet
-                      ? `Pay $${total.toFixed(2)} →`
-                      : 'Set all delivery dates to continue'}
+                    ? (allPromo ? 'Sealing your capsule…' : 'Redirecting to payment…')
+                    : !allDatesSet
+                      ? 'Set all delivery dates to continue'
+                      : allPromo
+                        ? 'Seal for Free →'
+                        : `Pay $${total.toFixed(2)} →`}
                 </button>
                 <button onClick={() => router.push('/dashboard')} style={cs.continueBtn}>
                   + Add more capsules
                 </button>
               </div>
 
-              <p style={cs.secureNote}>🔒 Secure checkout powered by Stripe</p>
+              {allPromo
+                ? <p style={cs.promoNote}>🎉 No payment required — Founder Promotion applies</p>
+                : <p style={cs.secureNote}>🔒 Secure checkout powered by Stripe</p>
+              }
             </>
           )}
         </div>
@@ -233,8 +290,17 @@ const cs = {
   body: { maxWidth: 620, margin: '0 auto', padding: '32px 16px 80px' },
   pageTitle: {
     fontFamily: F.serif, fontSize: 32, fontWeight: 700,
-    color: CHARCOAL, margin: '0 0 24px',
+    color: CHARCOAL, margin: '0 0 20px',
   },
+
+  promoBanner: {
+    display: 'flex', alignItems: 'flex-start', gap: 12,
+    backgroundColor: '#fff', border: `1px solid ${BLUSH}`,
+    borderLeft: `4px solid ${WINE}`, borderRadius: 10,
+    padding: '14px 16px', marginBottom: 20,
+  },
+  promoBannerIcon: { fontSize: 18, flexShrink: 0 },
+  promoBannerText: { fontFamily: F.sans, fontSize: 14, color: CHARCOAL, lineHeight: 1.6, margin: 0 },
 
   emptyCart: {
     backgroundColor: '#fff', border: `2px dashed ${BLUSH}`,
@@ -295,8 +361,33 @@ const cs = {
     border: '1.5px solid #10b981', borderRadius: 8,
     fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#f0fdf4',
   },
+  dateInputError: {
+    width: '100%', padding: '10px 12px',
+    border: '1.5px solid #dc2626', borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fef2f2',
+  },
   dateError: { fontFamily: F.sans, fontSize: 12, color: '#dc2626', margin: '6px 0 0' },
 
+  // Founder promo breakdown
+  promoBreakdown: {
+    backgroundColor: `${BLUSH}30`, border: `1px solid ${BLUSH}`,
+    borderRadius: 8, padding: '12px 14px', marginTop: 4,
+  },
+  promoRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+  },
+  promoTag: {
+    fontFamily: F.sans, fontSize: 13, fontWeight: 700, color: WINE,
+    margin: '0 0 4px',
+  },
+  promoDelivery: { fontFamily: F.sans, fontSize: 12, color: CHARCOAL, margin: '0 0 2px' },
+  promoWindow: { fontFamily: F.sans, fontSize: 11, color: '#888', margin: 0 },
+  promoFree: {
+    fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE,
+    flexShrink: 0,
+  },
+
+  // Standard price breakdown
   priceBreakdown: {
     backgroundColor: '#fdfbfa', border: `1px solid ${BLUSH}`,
     borderRadius: 8, padding: '12px 14px', marginTop: 4,
@@ -337,5 +428,9 @@ const cs = {
   },
   secureNote: {
     textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: 0,
+  },
+  promoNote: {
+    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE,
+    fontWeight: 600, margin: 0,
   },
 }
