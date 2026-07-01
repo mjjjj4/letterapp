@@ -29,9 +29,22 @@ export default function CreateCapsule() {
 
   const MAX_TITLE = 57
 
+  const handleTitleKeyDown = (e) => {
+    // Block printable characters when at the limit; let Backspace/Delete/arrows/ctrl combos through
+    if (
+      formData.title.length >= MAX_TITLE &&
+      e.key.length === 1 &&
+      !e.ctrlKey && !e.metaKey && !e.altKey
+    ) {
+      e.preventDefault()
+      setTitleOverLimit(true)
+    }
+  }
+
   const handleTitleChange = (e) => {
     const input = e.target.value
     if (input.length > MAX_TITLE) {
+      // Paste can still bring in too much — truncate and warn
       setTitleOverLimit(true)
       setFormData(prev => ({ ...prev, title: input.slice(0, MAX_TITLE) }))
     } else {
@@ -319,10 +332,11 @@ export default function CreateCapsule() {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text" name="title" value={formData.title}
+                    onKeyDown={handleTitleKeyDown}
                     onChange={handleTitleChange}
                     onBlur={() => setTitleOverLimit(false)}
                     placeholder={isGift ? 'Give this gift a title…' : 'Give your capsule a title…'}
-                    style={s.input} maxLength={57} required disabled={submitting}
+                    style={s.input} required disabled={submitting}
                   />
                   {titleOverLimit && (
                     <span style={s.titleWarning}>Over character limit</span>
