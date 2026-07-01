@@ -25,6 +25,20 @@ export default function CreateCapsule() {
   const [isGift, setIsGift] = useState(false)
   const [giftFromName, setGiftFromName] = useState('')
   const [giftToName, setGiftToName] = useState('') // display only, not saved to DB
+  const [titleOverLimit, setTitleOverLimit] = useState(false)
+
+  const MAX_TITLE = 57
+
+  const handleTitleChange = (e) => {
+    const input = e.target.value
+    if (input.length > MAX_TITLE) {
+      setTitleOverLimit(true)
+      setFormData(prev => ({ ...prev, title: input.slice(0, MAX_TITLE) }))
+    } else {
+      setTitleOverLimit(false)
+      setFormData(prev => ({ ...prev, title: input }))
+    }
+  }
 
   const [formData, setFormData] = useState({
     title: '',
@@ -302,15 +316,18 @@ export default function CreateCapsule() {
 
               <div style={s.field}>
                 <label style={s.label}>Title <span style={s.req}>*</span></label>
-                <input
-                  type="text" name="title" value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder={isGift ? 'Give this gift a title…' : 'Give your capsule a title…'}
-                  style={s.input} maxLength={100} required disabled={submitting}
-                />
-                <p style={{ ...s.hint, color: formData.title.length >= 90 ? '#dc3545' : MUTED }}>
-                  {formData.title.length}/100 characters
-                </p>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text" name="title" value={formData.title}
+                    onChange={handleTitleChange}
+                    onBlur={() => setTitleOverLimit(false)}
+                    placeholder={isGift ? 'Give this gift a title…' : 'Give your capsule a title…'}
+                    style={s.input} maxLength={57} required disabled={submitting}
+                  />
+                  {titleOverLimit && (
+                    <span style={s.titleWarning}>Over character limit</span>
+                  )}
+                </div>
               </div>
 
               <div style={s.field}>
@@ -476,6 +493,11 @@ const s = {
   textarea: { minHeight: 200, resize: 'vertical', fontFamily: F.sans },
   textareaSm: { minHeight: 100, resize: 'vertical', fontFamily: F.sans },
   hint: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0', textAlign: 'right' },
+  titleWarning: {
+    position: 'absolute', top: 8, right: 10,
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700,
+    color: '#e00', pointerEvents: 'none',
+  },
   fileOk: { fontFamily: F.sans, fontSize: 12, color: '#10b981', margin: '6px 0 0' },
 
   error: {
