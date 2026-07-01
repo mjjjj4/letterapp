@@ -174,7 +174,7 @@ export default async function handler(req, res) {
       // Mark the capsule as delivered
       const { error: updateError } = await supabaseAdmin
         .from('capsules')
-        .update({ status: 'delivered' })
+        .update({ status: 'delivered', delivered_at: new Date().toISOString() })
         .eq('id', capsule.id)
 
       if (updateError) {
