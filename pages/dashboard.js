@@ -43,12 +43,13 @@ export default function Dashboard() {
           .order('created_at', { ascending: false })
         if (!capsuleError) setCapsules(data || [])
 
-        // Gift capsules sent TO this user (by their email)
+        // Gift capsules sent TO this user — only sealed/delivered (drafts aren't finalized yet)
         const { data: gifts, error: giftsError } = await supabase
           .from('capsules')
           .select('*')
           .eq('is_gift', true)
           .eq('gift_recipient_email', user.email)
+          .in('status', ['sealed', 'delivered'])
           .order('created_at', { ascending: false })
         if (!giftsError) setReceivedGifts(gifts || [])
 
@@ -109,13 +110,13 @@ export default function Dashboard() {
     )
   }
 
-  // Split owned capsules into self vs gift-sent
-  const selfCapsules = capsules.filter(c => !c.is_gift)
-  const giftsSent = capsules.filter(c => c.is_gift)
-
-  const drafts = selfCapsules.filter(c => c.status === 'draft')
-  const sealed = selfCapsules.filter(c => c.status === 'sealed')
-  const delivered = selfCapsules.filter(c => c.status === 'delivered')
+  // Drafts = ALL user-owned drafts (self and gift)
+  const drafts = capsules.filter(c => c.status === 'draft')
+  // Sealed/Delivered = self capsules only
+  const sealed = capsules.filter(c => c.status === 'sealed' && !c.is_gift)
+  const delivered = capsules.filter(c => c.status === 'delivered' && !c.is_gift)
+  // Gifts Sent = only sealed/delivered gifts (drafts show in the Drafts section above)
+  const giftsSent = capsules.filter(c => c.is_gift && (c.status === 'sealed' || c.status === 'delivered'))
   const isFirstEver = capsules.length === 0 && receivedGifts.length === 0
 
   return (

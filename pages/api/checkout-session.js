@@ -141,7 +141,7 @@ export default async function handler(req, res) {
   console.log('=== Checkout Session API ===', new Date().toISOString())
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { cartItems, userId, userEmail } = req.body
+  const { cartItems, userId, userEmail, notificationPref, selfPhone, smsConsent, giftRecipientEmails } = req.body
 
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     return res.status(400).json({ error: 'cartItems must be a non-empty array' })
@@ -184,14 +184,16 @@ export default async function handler(req, res) {
 
       const isPromo = days <= 180
       const isGift = data[0].is_gift || false
-      const giftRecipientEmail = data[0].gift_recipient_email || null
+      // Gift recipient email comes from checkout form (giftRecipientEmails map), not from the capsule row
+      const giftRecipientEmail = isGift ? (giftRecipientEmails?.[capsuleId] || data[0].gift_recipient_email || null) : null
       const giftFromName = data[0].gift_from_name || null
+      const sendSms = !isGift && (notificationPref === 'email_text' || notificationPref === 'text_only')
 
       if (isPromo) {
         validatedItems.push({
           capsuleId, title: data[0].title, deliveryDate,
           years: null, price: 0, isFounderPromo: true,
-          isGift, giftRecipientEmail, giftFromName,
+          isGift, giftRecipientEmail, giftFromName, sendSms,
         })
       } else {
         const pricing = serverCalcPrice(deliveryDate, isGift)
@@ -199,7 +201,7 @@ export default async function handler(req, res) {
         validatedItems.push({
           capsuleId, title: data[0].title, deliveryDate,
           years: pricing.years, price: pricing.price, isFounderPromo: false,
-          isGift, giftRecipientEmail, giftFromName,
+          isGift, giftRecipientEmail, giftFromName, sendSms,
         })
       }
 
@@ -212,10 +214,16 @@ export default async function handler(req, res) {
     // Seal promo items immediately for free
     if (promoItems.length > 0) {
       for (const item of promoItems) {
-        // Step 1: seal using only original columns — safe regardless of schema cache
+        // Step 1: seal using core columns
+        const promoSealFields = {
+          status: 'sealed',
+          deliver_at: item.deliveryDate,
+          ...(item.giftRecipientEmail ? { gift_recipient_email: item.giftRecipientEmail } : {}),
+          ...(item.sendSms ? { send_sms_notification: true } : {}),
+        }
         const { error: sealError } = await supabaseAdmin
           .from('capsules')
-          .update({ status: 'sealed', deliver_at: item.deliveryDate })
+          .update(promoSealFields)
           .eq('id', item.capsuleId)
 
         if (sealError) {
@@ -266,6 +274,21 @@ export default async function handler(req, res) {
       }
     }
 
+    // Save phone + SMS consent to user metadata if provided
+    if (selfPhone || smsConsent) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...(selfPhone ? { phone_number: selfPhone } : {}),
+            ...(smsConsent !== undefined ? { sms_consent: smsConsent } : {}),
+          },
+        })
+        console.log('  User metadata updated with phone/smsConsent')
+      } catch (metaErr) {
+        console.warn('  Could not update user metadata (non-fatal):', metaErr.message)
+      }
+    }
+
     // If no paid items, we're done — redirect to success page directly
     if (paidItems.length === 0) {
       console.log('All items were promo — no Stripe session needed')
@@ -283,8 +306,9 @@ export default async function handler(req, res) {
       userId,
       capsule_count: String(paidItems.length),
     }
+    // Format: capsuleId|deliveryDate|price|giftEmail|smsFlag
     paidItems.forEach((item, i) => {
-      metadata[`capsule_${i}`] = `${item.capsuleId}|${item.deliveryDate}|${item.price}`
+      metadata[`capsule_${i}`] = `${item.capsuleId}|${item.deliveryDate}|${item.price}|${item.giftRecipientEmail || ''}|${item.sendSms ? '1' : '0'}`
     })
 
     const productName = paidItems.length === 1

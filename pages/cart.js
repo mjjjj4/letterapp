@@ -14,10 +14,8 @@ const INK = '#3A2418'
 const MUTED = '#7A6A5A'
 const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
-function fmtPhone(digits) {
-  if (!digits || digits.length < 10) return digits
-  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`
-}
+function digitsOnly(s) { return (s || '').replace(/\D/g, '') }
+function isValidEmail(e) { return /\S+@\S+\.\S+/.test(e || '') }
 
 export default function Cart() {
   const router = useRouter()
@@ -27,12 +25,29 @@ export default function Cart() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [error, setError] = useState('')
 
+  // Notification preferences (self capsules)
+  const [notifPref, setNotifPref] = useState('email_text') // email_text | email_only | text_only
+  const [selfPhone, setSelfPhone] = useState('')
+  const [smsConsent, setSmsConsent] = useState(false)
+
+  // Recipient emails for gift capsules { [capsuleId]: email }
+  const [giftEmails, setGiftEmails] = useState({})
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/'); return }
       setUser(user)
-      setCart(loadCart())
+      const loaded = loadCart()
+      setCart(loaded)
+      // Pre-fill gift emails from any already-set recipient emails on cart items
+      const preloaded = {}
+      loaded.forEach(item => {
+        if (item.isGift && item.giftRecipientEmail) {
+          preloaded[item.capsuleId] = item.giftRecipientEmail
+        }
+      })
+      if (Object.keys(preloaded).length > 0) setGiftEmails(preloaded)
       setLoading(false)
     }
     init()
@@ -43,6 +58,11 @@ export default function Cart() {
       const updated = prev.filter(x => x.capsuleId !== capsuleId)
       saveCart(updated)
       return updated
+    })
+    setGiftEmails(prev => {
+      const next = { ...prev }
+      delete next[capsuleId]
+      return next
     })
   }
 
@@ -56,7 +76,7 @@ export default function Cart() {
     let dateError = null
 
     if (!dateStr) {
-      // no date selected
+      // no date
     } else if (info?.tooSoon) {
       dateError = 'Must wait at least 1 month from today'
     } else if (info?.promo) {
@@ -68,14 +88,24 @@ export default function Cart() {
     }
 
     setCart(prev => {
-      const updated = prev.map(item => {
-        if (item.capsuleId !== capsuleId) return item
-        return { ...item, deliveryDate: dateStr, years, price, isFounderPromo, dateError }
-      })
+      const updated = prev.map(item =>
+        item.capsuleId !== capsuleId ? item
+          : { ...item, deliveryDate: dateStr, years, price, isFounderPromo, dateError }
+      )
       saveCart(updated)
       return updated
     })
   }
+
+  const setGiftEmail = (capsuleId, email) => {
+    setGiftEmails(prev => ({ ...prev, [capsuleId]: email }))
+  }
+
+  // Derived state
+  const selfItems = cart.filter(i => !i.isGift)
+  const giftItems = cart.filter(i => i.isGift)
+  const hasSelfItems = selfItems.length > 0
+  const hasGiftItems = giftItems.length > 0
 
   const allDatesSet = cart.length > 0 && cart.every(
     item => item.deliveryDate && !item.dateError && item.price !== null
@@ -83,15 +113,49 @@ export default function Cart() {
   const total = +(cart.reduce((sum, item) => sum + (item.price || 0), 0)).toFixed(2)
   const allPromo = cart.length > 0 && cart.every(item => item.isFounderPromo)
 
+  // Notification validation
+  const needsPhone = hasSelfItems && (notifPref === 'email_text' || notifPref === 'text_only')
+  const notifValid = !hasSelfItems || (
+    notifPref === 'email_only' ||
+    (needsPhone && digitsOnly(selfPhone).length >= 10 && smsConsent)
+  )
+
+  const giftEmailsValid = giftItems.every(item => isValidEmail(giftEmails[item.capsuleId]))
+
+  const allReadyToCheckout = allDatesSet && notifValid && giftEmailsValid
+
   const handleCheckout = async () => {
-    if (!allDatesSet || !user) return
+    if (!allReadyToCheckout || !user) return
+
+    // Inline validation with user-visible errors
+    if (needsPhone && digitsOnly(selfPhone).length < 10) {
+      setError('Please enter a phone number')
+      return
+    }
+    if (needsPhone && !smsConsent) {
+      setError('Please confirm SMS consent')
+      return
+    }
+    if (!giftEmailsValid) {
+      setError('Please enter a valid recipient email for each gift capsule')
+      return
+    }
+
     setCheckingOut(true)
     setError('')
     try {
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartItems: cart, userId: user.id, userEmail: user.email }),
+        body: JSON.stringify({
+          cartItems: cart,
+          userId: user.id,
+          userEmail: user.email,
+          notificationPref: hasSelfItems ? notifPref : null,
+          selfPhone: needsPhone ? digitsOnly(selfPhone) : null,
+          smsConsent: needsPhone ? smsConsent : false,
+          giftRecipientEmails: giftEmails,
+        }),
       })
       const data = await response.json()
       if (!response.ok) { setError(data.error || 'Failed to create checkout session'); setCheckingOut(false); return }
@@ -153,6 +217,7 @@ export default function Cart() {
 
               {error && <div style={cs.errorBox}>{error}</div>}
 
+              {/* Cart items */}
               <div style={cs.itemList}>
                 {cart.map(item => {
                   const hasValidDate = !!(item.deliveryDate && !item.dateError && item.price !== null)
@@ -165,11 +230,6 @@ export default function Cart() {
                             <p style={cs.giftTag}>🎁 Gift from {item.giftFromName || 'you'}</p>
                           )}
                           <h3 style={cs.itemTitle}>{item.title}</h3>
-                          {item.isGift && item.giftRecipientEmail && (
-                            <p style={cs.giftRecipient}>
-                              To: {item.giftRecipientEmail}
-                            </p>
-                          )}
                         </div>
                         <button onClick={() => removeItem(item.capsuleId)} style={cs.removeBtn}>Remove</button>
                       </div>
@@ -187,9 +247,7 @@ export default function Cart() {
                             : cs.dateInputEmpty
                           }
                         />
-                        {item.dateError && (
-                          <p style={cs.dateError}>{item.dateError}</p>
-                        )}
+                        {item.dateError && <p style={cs.dateError}>{item.dateError}</p>}
                       </div>
 
                       {hasValidDate && (
@@ -217,9 +275,7 @@ export default function Cart() {
                             <div style={cs.priceRow}>
                               <span style={cs.priceLabel}>Rate</span>
                               <span style={cs.priceValue}>
-                                {item.isGift
-                                  ? `$${GIFT_PRICE_PER_YEAR.toFixed(2)}/year (gift)`
-                                  : '$1.85/year'}
+                                {item.isGift ? `$${GIFT_PRICE_PER_YEAR.toFixed(2)}/year (gift)` : '$1.85/year'}
                               </span>
                             </div>
                             <div style={{ ...cs.priceRow, borderTop: `1px solid ${BORDER}`, paddingTop: 10, marginTop: 4 }}>
@@ -246,6 +302,140 @@ export default function Cart() {
                 })}
               </div>
 
+              {/* ── NOTIFICATION PREFERENCES ── */}
+              <div style={cs.notifSection}>
+                <h2 style={cs.notifHeading}>How would you like to be notified?</h2>
+
+                {/* Self capsule options */}
+                {hasSelfItems && (
+                  <div style={cs.notifGroup}>
+
+                    {/* Email + Text — RECOMMENDED */}
+                    <div
+                      style={notifPref === 'email_text' ? cs.notifOptionActive : cs.notifOption}
+                      onClick={() => setNotifPref('email_text')}
+                    >
+                      <div style={cs.notifOptionRow}>
+                        <input
+                          type="radio" name="notif" value="email_text"
+                          checked={notifPref === 'email_text'}
+                          onChange={() => setNotifPref('email_text')}
+                          style={cs.radio}
+                        />
+                        <span style={cs.notifLabel}>Email + Text</span>
+                        <span style={cs.recommendedBadge}>RECOMMENDED</span>
+                      </div>
+                      <p style={cs.notifDesc}>Get both email and text on delivery day</p>
+                    </div>
+
+                    {notifPref === 'email_text' && (
+                      <div style={cs.phoneBlock}>
+                        <input
+                          type="tel"
+                          value={selfPhone}
+                          onChange={e => setSelfPhone(e.target.value)}
+                          placeholder="(555) 123-4567"
+                          style={cs.phoneInput}
+                        />
+                        <label style={cs.consentLabel}>
+                          <input
+                            type="checkbox"
+                            checked={smsConsent}
+                            onChange={e => setSmsConsent(e.target.checked)}
+                            style={{ marginRight: 8 }}
+                          />
+                          I agree to SMS notifications
+                        </label>
+                      </div>
+                    )}
+
+                    {/* Email only */}
+                    <div
+                      style={notifPref === 'email_only' ? cs.notifOptionActive : cs.notifOption}
+                      onClick={() => setNotifPref('email_only')}
+                    >
+                      <div style={cs.notifOptionRow}>
+                        <input
+                          type="radio" name="notif" value="email_only"
+                          checked={notifPref === 'email_only'}
+                          onChange={() => setNotifPref('email_only')}
+                          style={cs.radio}
+                        />
+                        <span style={cs.notifLabel}>Email only</span>
+                      </div>
+                      <p style={cs.notifDesc}>Get an email when this opens</p>
+                    </div>
+
+                    {/* Text only */}
+                    <div
+                      style={notifPref === 'text_only' ? cs.notifOptionActive : cs.notifOption}
+                      onClick={() => setNotifPref('text_only')}
+                    >
+                      <div style={cs.notifOptionRow}>
+                        <input
+                          type="radio" name="notif" value="text_only"
+                          checked={notifPref === 'text_only'}
+                          onChange={() => setNotifPref('text_only')}
+                          style={cs.radio}
+                        />
+                        <span style={cs.notifLabel}>Text only</span>
+                      </div>
+                      <p style={cs.notifDesc}>Get a text only (no email)</p>
+                    </div>
+
+                    {notifPref === 'text_only' && (
+                      <div style={cs.phoneBlock}>
+                        <input
+                          type="tel"
+                          value={selfPhone}
+                          onChange={e => setSelfPhone(e.target.value)}
+                          placeholder="(555) 123-4567"
+                          style={cs.phoneInput}
+                        />
+                        <label style={cs.consentLabel}>
+                          <input
+                            type="checkbox"
+                            checked={smsConsent}
+                            onChange={e => setSmsConsent(e.target.checked)}
+                            style={{ marginRight: 8 }}
+                          />
+                          I agree to SMS notifications
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Gift capsule recipient emails */}
+                {hasGiftItems && (
+                  <div style={cs.notifGroup}>
+                    {hasSelfItems && <div style={cs.notifDivider} />}
+
+                    {giftItems.map(item => (
+                      <div key={item.capsuleId} style={cs.giftEmailBlock}>
+                        <div style={cs.giftEmailHeader}>
+                          <span style={cs.giftEmailLabel}>🎁 {item.title}</span>
+                          <span style={cs.giftEmailPre}>Email only — recipient chooses their preference via email</span>
+                        </div>
+                        <label style={cs.fieldLabel}>Recipient email <span style={{ color: WINE }}>*</span></label>
+                        <input
+                          type="email"
+                          value={giftEmails[item.capsuleId] || ''}
+                          onChange={e => setGiftEmail(item.capsuleId, e.target.value)}
+                          placeholder="recipient@email.com"
+                          style={{
+                            ...cs.phoneInput,
+                            borderColor: giftEmails[item.capsuleId] && !isValidEmail(giftEmails[item.capsuleId])
+                              ? '#dc2626' : undefined,
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
               <div style={cs.summary}>
                 <div style={cs.summaryHeader}>
                   <span style={cs.summaryCount}>{cart.length} capsule{cart.length !== 1 ? 's' : ''}</span>
@@ -280,11 +470,11 @@ export default function Cart() {
               <div style={cs.actions}>
                 <button
                   onClick={handleCheckout}
-                  disabled={!allDatesSet || checkingOut}
+                  disabled={!allReadyToCheckout || checkingOut}
                   style={{
                     ...cs.checkoutBtn,
-                    opacity: allDatesSet && !checkingOut ? 1 : 0.45,
-                    cursor: allDatesSet && !checkingOut ? 'pointer' : 'not-allowed',
+                    opacity: allReadyToCheckout && !checkingOut ? 1 : 0.45,
+                    cursor: allReadyToCheckout && !checkingOut ? 'pointer' : 'not-allowed',
                   }}
                 >
                   {checkingOut
@@ -329,10 +519,7 @@ export default function Cart() {
 const cs = {
   page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
   body: { maxWidth: 620, margin: '0 auto', padding: '32px 16px 80px' },
-  pageTitle: {
-    fontFamily: F.serif, fontSize: 32, fontWeight: 600,
-    color: MAROON, margin: '0 0 20px',
-  },
+  pageTitle: { fontFamily: F.serif, fontSize: 32, fontWeight: 600, color: MAROON, margin: '0 0 20px' },
 
   promoBanner: {
     display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -348,18 +535,11 @@ const cs = {
     borderRadius: 10, padding: '48px 24px', textAlign: 'center',
   },
   emptyIcon: { fontSize: 40, margin: '0 0 14px' },
-  emptyHeadline: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
-    color: MAROON, margin: '0 0 10px',
-  },
-  emptyBody: {
-    fontFamily: F.sans, fontSize: 14, color: MUTED,
-    margin: '0 auto 28px', lineHeight: 1.6, maxWidth: 340,
-  },
+  emptyHeadline: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: MAROON, margin: '0 0 10px' },
+  emptyBody: { fontFamily: F.sans, fontSize: 14, color: MUTED, margin: '0 auto 28px', lineHeight: 1.6, maxWidth: 340 },
   dashBtn: {
     padding: '12px 28px', backgroundColor: WINE, color: CREAM,
-    border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
-    cursor: 'pointer',
+    border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
 
   errorBox: {
@@ -373,21 +553,9 @@ const cs = {
     backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderLeft: `4px solid ${WINE}`, borderRadius: 10, padding: 20,
   },
-  itemHeader: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'flex-start', gap: 12, marginBottom: 16,
-  },
-  giftTag: {
-    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
-    margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px',
-  },
-  itemTitle: {
-    fontFamily: F.serif, fontSize: 16, fontWeight: 600,
-    color: INK, margin: 0, wordBreak: 'break-word', lineHeight: 1.4,
-  },
-  giftRecipient: {
-    fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0',
-  },
+  itemHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
+  giftTag: { fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  itemTitle: { fontFamily: F.serif, fontSize: 16, fontWeight: 600, color: INK, margin: 0, wordBreak: 'break-word', lineHeight: 1.4 },
   removeBtn: {
     padding: '5px 12px', backgroundColor: 'transparent', color: '#dc2626',
     border: '1px solid #fecaca', borderRadius: 6, fontSize: 12,
@@ -395,57 +563,88 @@ const cs = {
   },
 
   dateSection: { marginBottom: 12, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' },
-  dateLabel: {
-    display: 'block', fontFamily: F.sans, fontSize: 11, fontWeight: 700,
-    color: MUTED, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px',
-  },
+  dateLabel: { display: 'block', fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' },
   dateInputEmpty: {
-    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px', border: `1.5px dashed ${BORDER}`, borderRadius: 8,
-    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: CREAM,
-    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0, padding: '10px 12px',
+    border: `1.5px dashed ${BORDER}`, borderRadius: 8, fontSize: 16, fontFamily: F.sans,
+    boxSizing: 'border-box', backgroundColor: CREAM,
   },
   dateInputValid: {
-    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px', border: '1.5px solid #10b981', borderRadius: 8,
-    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#f0fdf4',
-    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0, padding: '10px 12px',
+    border: '1.5px solid #10b981', borderRadius: 8, fontSize: 16, fontFamily: F.sans,
+    boxSizing: 'border-box', backgroundColor: '#f0fdf4',
   },
   dateInputError: {
-    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px', border: '1.5px solid #dc2626', borderRadius: 8,
-    fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fef2f2',
-    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+    display: 'block', width: '100%', maxWidth: '100%', minWidth: 0, padding: '10px 12px',
+    border: '1.5px solid #dc2626', borderRadius: 8, fontSize: 16, fontFamily: F.sans,
+    boxSizing: 'border-box', backgroundColor: '#fef2f2',
   },
   dateError: { fontFamily: F.sans, fontSize: 12, color: '#dc2626', margin: '6px 0 0' },
 
-  promoBreakdown: {
-    backgroundColor: 'rgba(77,0,0,0.04)', border: `1px solid ${BORDER}`,
-    borderRadius: 8, padding: '12px 14px', marginTop: 4,
-  },
+  promoBreakdown: { backgroundColor: 'rgba(77,0,0,0.04)', border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 14px', marginTop: 4 },
   promoRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   promoTag: { fontFamily: F.sans, fontSize: 13, fontWeight: 700, color: WINE, margin: '0 0 4px' },
   promoDelivery: { fontFamily: F.sans, fontSize: 12, color: INK, margin: '0 0 2px' },
   promoWindow: { fontFamily: F.sans, fontSize: 11, color: MUTED, margin: 0 },
   promoFree: { fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE, flexShrink: 0 },
 
-  priceBreakdown: {
-    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
-    borderRadius: 8, padding: '12px 14px', marginTop: 4,
-  },
-  priceRow: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', paddingBottom: 6, marginBottom: 6,
-  },
+  priceBreakdown: { backgroundColor: CREAM, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '12px 14px', marginTop: 4 },
+  priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 6, marginBottom: 6 },
   priceLabel: { fontFamily: F.sans, fontSize: 12, color: MUTED },
   priceValue: { fontFamily: F.sans, fontSize: 12, color: INK, fontWeight: 700 },
   itemPrice: { fontFamily: F.sans, fontSize: 18, fontWeight: 700, color: WINE },
   dateMissing: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0', fontStyle: 'italic' },
+  donationLine: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px dashed ${BORDER}`, paddingTop: 8, marginTop: 8 },
+  donationLabel: { fontFamily: F.sans, fontSize: 11, color: MUTED },
+  donationValue: { fontFamily: F.sans, fontSize: 11, color: '#b45309', fontWeight: 600 },
 
-  summary: {
+  // Notification preferences
+  notifSection: {
     backgroundColor: CREAM, border: `1px solid ${BORDER}`,
-    borderRadius: 10, padding: '18px 20px', marginBottom: 14,
+    borderRadius: 10, padding: '20px 20px 8px', marginBottom: 20,
   },
+  notifHeading: { fontFamily: F.serif, fontSize: 18, fontWeight: 600, color: MAROON, margin: '0 0 16px' },
+  notifGroup: { display: 'flex', flexDirection: 'column', gap: 0 },
+  notifDivider: { borderTop: `1px solid ${BORDER}`, margin: '16px 0' },
+
+  notifOption: {
+    border: `1.5px solid ${BORDER}`, borderRadius: 8, padding: '14px 16px',
+    marginBottom: 10, cursor: 'pointer', backgroundColor: CREAM,
+    transition: 'border-color 0.15s',
+  },
+  notifOptionActive: {
+    border: `1.5px solid ${WINE}`, borderRadius: 8, padding: '14px 16px',
+    marginBottom: 10, cursor: 'pointer', backgroundColor: 'rgba(138,35,35,0.04)',
+  },
+  notifOptionRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 },
+  radio: { accentColor: WINE, width: 16, height: 16, flexShrink: 0 },
+  notifLabel: { fontFamily: F.sans, fontSize: 15, fontWeight: 600, color: INK },
+  recommendedBadge: {
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: WINE,
+    backgroundColor: 'rgba(138,35,35,0.1)', padding: '2px 8px', borderRadius: 4,
+    letterSpacing: '0.5px',
+  },
+  notifDesc: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 0 26px' },
+
+  phoneBlock: {
+    backgroundColor: 'rgba(77,0,0,0.03)', border: `1px solid ${BORDER}`,
+    borderRadius: 8, padding: '14px 16px', marginBottom: 10,
+    display: 'flex', flexDirection: 'column', gap: 12,
+  },
+  phoneInput: {
+    display: 'block', width: '100%', padding: '11px 14px',
+    border: `1.5px solid ${BORDER}`, borderRadius: 8,
+    fontSize: 14, fontFamily: F.sans, backgroundColor: CREAM, boxSizing: 'border-box',
+  },
+  consentLabel: { fontFamily: F.sans, fontSize: 13, color: INK, display: 'flex', alignItems: 'center', cursor: 'pointer' },
+
+  giftEmailBlock: { marginBottom: 12 },
+  giftEmailHeader: { marginBottom: 8 },
+  giftEmailLabel: { fontFamily: F.serif, fontSize: 14, fontWeight: 600, color: INK, display: 'block', marginBottom: 2 },
+  giftEmailPre: { fontFamily: F.sans, fontSize: 12, color: MUTED, display: 'block' },
+  fieldLabel: { fontFamily: F.sans, fontSize: 13, fontWeight: 600, color: INK, display: 'block', marginBottom: 6 },
+
+  summary: { backgroundColor: CREAM, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '18px 20px', marginBottom: 14 },
   summaryHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   summaryCount: { fontFamily: F.sans, fontSize: 14, color: MUTED },
   summaryTotal: { fontFamily: F.sans, fontSize: 26, fontWeight: 700, color: WINE },
@@ -467,10 +666,4 @@ const cs = {
   secureNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '0 0 6px' },
   promoNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE, fontWeight: 600, margin: 0 },
   npcfNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: 0, lineHeight: 1.5 },
-  donationLine: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderTop: `1px dashed ${BORDER}`, paddingTop: 8, marginTop: 8,
-  },
-  donationLabel: { fontFamily: F.sans, fontSize: 11, color: MUTED },
-  donationValue: { fontFamily: F.sans, fontSize: 11, color: '#b45309', fontWeight: 600 },
 }

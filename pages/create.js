@@ -13,10 +13,6 @@ const INK = '#3A2418'
 const MUTED = '#7A6A5A'
 const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
-function digitsOnly(str) {
-  return (str || '').replace(/\D/g, '')
-}
-
 export default function CreateCapsule() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -27,12 +23,8 @@ export default function CreateCapsule() {
   const [editCapsuleId, setEditCapsuleId] = useState(null)
 
   const [isGift, setIsGift] = useState(false)
-  const [giftFields, setGiftFields] = useState({
-    giftRecipientEmail: '',
-    giftFromName: '',
-    gifterPhone: '',
-    giftRecipientPhone: '',
-  })
+  const [giftFromName, setGiftFromName] = useState('')
+  const [giftToName, setGiftToName] = useState('') // display only, not saved to DB
 
   const [formData, setFormData] = useState({
     title: '',
@@ -92,23 +84,13 @@ export default function CreateCapsule() {
 
     if (data.is_gift) {
       setIsGift(true)
-      setGiftFields({
-        giftRecipientEmail: data.gift_recipient_email || '',
-        giftFromName: data.gift_from_name || '',
-        gifterPhone: data.gifter_phone || '',
-        giftRecipientPhone: data.gift_recipient_phone || '',
-      })
+      setGiftFromName(data.gift_from_name || '')
     }
   }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleGiftFieldChange = (e) => {
-    const { name, value } = e.target
-    setGiftFields(prev => ({ ...prev, [name]: value }))
   }
 
   const handleFileChange = (e) => {
@@ -148,27 +130,10 @@ export default function CreateCapsule() {
       return
     }
 
-    if (isGift) {
-      if (!giftFields.giftRecipientEmail || !/\S+@\S+\.\S+/.test(giftFields.giftRecipientEmail)) {
-        setError('Please enter a valid recipient email address')
-        setSubmitting(false)
-        return
-      }
-      if (!giftFields.giftFromName || giftFields.giftFromName.trim().length < 2) {
-        setError('Please enter how the recipient should know it\'s from you (at least 2 characters)')
-        setSubmitting(false)
-        return
-      }
-      if (digitsOnly(giftFields.gifterPhone).length < 10) {
-        setError('Please enter a valid phone number for yourself (at least 10 digits)')
-        setSubmitting(false)
-        return
-      }
-      if (digitsOnly(giftFields.giftRecipientPhone).length < 10) {
-        setError('Please enter a valid phone number for the recipient (at least 10 digits)')
-        setSubmitting(false)
-        return
-      }
+    if (isGift && (!giftFromName || giftFromName.trim().length < 2)) {
+      setError('Please enter a name for the "From" field (at least 2 characters)')
+      setSubmitting(false)
+      return
     }
 
     try {
@@ -186,10 +151,7 @@ export default function CreateCapsule() {
           ? formData.personality_words.split(',').map(w => w.trim()).filter(Boolean)
           : null,
         is_gift: isGift,
-        gift_recipient_email: isGift ? giftFields.giftRecipientEmail.trim().toLowerCase() : null,
-        gift_recipient_phone: isGift ? digitsOnly(giftFields.giftRecipientPhone) || null : null,
-        gift_from_name: isGift ? giftFields.giftFromName.trim() : null,
-        gifter_phone: isGift ? digitsOnly(giftFields.gifterPhone) || null : null,
+        gift_from_name: isGift ? giftFromName.trim() : null,
       }
 
       if (editMode && editCapsuleId) {
@@ -297,61 +259,33 @@ export default function CreateCapsule() {
             {isGift && (
               <div style={{ ...s.section, borderColor: WINE, borderWidth: 1.5 }}>
                 <h2 style={s.sectionTitle}>🎁 Gift details</h2>
-                <p style={s.sectionSub}>Tell us who this is for and how to reach you both.</p>
-
-                <div style={s.field}>
-                  <label style={s.label}>Who are you sending this to? <span style={s.req}>*</span></label>
-                  <input
-                    type="email"
-                    name="giftRecipientEmail"
-                    value={giftFields.giftRecipientEmail}
-                    onChange={handleGiftFieldChange}
-                    placeholder="recipient@email.com"
-                    style={s.input}
-                    disabled={submitting}
-                  />
-                </div>
-
-                <div style={s.field}>
-                  <label style={s.label}>How should they know it's from you? <span style={s.req}>*</span></label>
-                  <input
-                    type="text"
-                    name="giftFromName"
-                    value={giftFields.giftFromName}
-                    onChange={handleGiftFieldChange}
-                    placeholder="Mom, Best Friend, Your Sister…"
-                    style={s.input}
-                    maxLength={60}
-                    disabled={submitting}
-                  />
-                </div>
+                <p style={s.sectionSub}>You'll add the recipient's email at checkout. For now, just tell us who it's from and who it's for.</p>
 
                 <div style={s.row}>
                   <div style={{ ...s.field, flex: 1 }}>
-                    <label style={s.label}>Your phone number <span style={s.req}>*</span></label>
-                    <p style={s.fieldHint}>In case we need to reach you</p>
+                    <label style={s.label}>From <span style={s.req}>*</span></label>
                     <input
-                      type="tel"
-                      name="gifterPhone"
-                      value={giftFields.gifterPhone}
-                      onChange={handleGiftFieldChange}
-                      placeholder="(555) 123-4567"
+                      type="text"
+                      value={giftFromName}
+                      onChange={e => setGiftFromName(e.target.value)}
+                      placeholder="Mom, Your best friend, Grandma…"
                       style={s.input}
+                      maxLength={60}
                       disabled={submitting}
                     />
                   </div>
                   <div style={{ ...s.field, flex: 1 }}>
-                    <label style={s.label}>Recipient's phone number <span style={s.req}>*</span></label>
-                    <p style={s.fieldHint}>For emergency contact only</p>
+                    <label style={s.label}>To <span style={s.opt}>(optional)</span></label>
                     <input
-                      type="tel"
-                      name="giftRecipientPhone"
-                      value={giftFields.giftRecipientPhone}
-                      onChange={handleGiftFieldChange}
-                      placeholder="(555) 987-6543"
+                      type="text"
+                      value={giftToName}
+                      onChange={e => setGiftToName(e.target.value)}
+                      placeholder="Alex, My sister, Future me…"
                       style={s.input}
+                      maxLength={60}
                       disabled={submitting}
                     />
+                    <p style={s.hint}>Just for your reference</p>
                   </div>
                 </div>
               </div>

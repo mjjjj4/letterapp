@@ -202,8 +202,16 @@ export default async function handler(req, res) {
   for (let i = 0; i < capsuleCount; i++) {
     const raw = session.metadata[`capsule_${i}`]
     if (!raw) { console.warn(`Missing capsule_${i} in metadata`); continue }
-    const [capsuleId, deliveryDate, priceStr] = raw.split('|')
-    capsuleItems.push({ capsuleId, deliveryDate, price: parseFloat(priceStr) })
+    // Format: capsuleId|deliveryDate|price|giftEmail|smsFlag
+    const parts = raw.split('|')
+    const [capsuleId, deliveryDate, priceStr, giftEmail, smsFlag] = parts
+    capsuleItems.push({
+      capsuleId,
+      deliveryDate,
+      price: parseFloat(priceStr),
+      giftRecipientEmail: giftEmail || null,
+      sendSms: smsFlag === '1',
+    })
   }
 
   console.log(`Processing ${capsuleItems.length} capsule(s) for user ${userId}`)
@@ -213,13 +221,16 @@ export default async function handler(req, res) {
     const donationAmount = +(item.price * 0.05).toFixed(2)
     console.log(`Sealing capsule ${item.capsuleId} → deliver_at: ${item.deliveryDate} | donation: $${donationAmount}`)
 
+    const sealFields = {
+      status: 'sealed',
+      deliver_at: item.deliveryDate,
+      donation_amount: donationAmount,
+      ...(item.giftRecipientEmail ? { gift_recipient_email: item.giftRecipientEmail } : {}),
+      ...(item.sendSms ? { send_sms_notification: true } : {}),
+    }
     const { data, error } = await supabaseAdmin
       .from('capsules')
-      .update({
-        status: 'sealed',
-        deliver_at: item.deliveryDate,
-        donation_amount: donationAmount,
-      })
+      .update(sealFields)
       .eq('id', item.capsuleId)
       .select('id, title, is_gift, gift_recipient_email, gift_from_name')
 
