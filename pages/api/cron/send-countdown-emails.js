@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-function day3Html() {
+function emailShell(bodyContent) {
   return `
 <!DOCTYPE html>
 <html>
@@ -18,102 +18,67 @@ function day3Html() {
     <tr>
       <td align="center">
         <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
+
+          <!-- Header -->
           <tr>
-            <td style="padding:64px 48px;text-align:center;">
-              <p style="margin:0 0 24px;font-size:13px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter</p>
-              <h1 style="margin:0 0 28px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;">
-                Something is coming.
-              </h1>
-              <p style="margin:0;font-size:17px;color:#3A2418;line-height:1.9;">
-                In three days, a message from your past self arrives.<br/>Get ready to reconnect.
-              </p>
+            <td style="background:#4D0000;padding:20px 16px;text-align:center;">
+              <p style="margin:0;font-size:22px;color:#FFFBF5;font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:1px;">The Letter</p>
             </td>
           </tr>
+
+          <!-- Body -->
           <tr>
-            <td style="background:#FFFBF5;padding:20px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
-              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
-                The Letter &mdash; Time capsules for your future self.
-              </p>
+            <td style="padding:56px 48px;text-align:center;background:#FFFBF5;">
+              ${bodyContent}
             </td>
           </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#393232;padding:16px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#FFFBF5;font-family:Arial,sans-serif;">&copy; 2026 The Letter &nbsp;|&nbsp; hello@theletter.app</p>
+            </td>
+          </tr>
+
         </table>
       </td>
     </tr>
   </table>
 </body>
 </html>`.trim()
+}
+
+function day3Html() {
+  return emailShell(`
+    <h1 style="margin:0 0 24px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;font-family:Georgia,serif;">
+      Something is coming.
+    </h1>
+    <p style="margin:0;font-size:17px;color:#393232;line-height:1.9;">
+      In three days, a message from your past self arrives.<br/>Get ready to reconnect.
+    </p>
+  `)
 }
 
 function day2Html() {
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
-          <tr>
-            <td style="padding:64px 48px;text-align:center;">
-              <p style="margin:0 0 24px;font-size:13px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter</p>
-              <h1 style="margin:0 0 28px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;">
-                Do you remember who you were?
-              </h1>
-              <p style="margin:0;font-size:17px;color:#3A2418;line-height:1.9;">
-                Two days until your capsule opens.<br/>Think about who you were when you wrote it.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background:#FFFBF5;padding:20px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
-              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
-                The Letter &mdash; Time capsules for your future self.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`.trim()
+  return emailShell(`
+    <h1 style="margin:0 0 24px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;font-family:Georgia,serif;">
+      Do you remember who you were?
+    </h1>
+    <p style="margin:0;font-size:17px;color:#393232;line-height:1.9;">
+      Two days until your capsule opens.<br/>Think about who you were when you wrote it.
+    </p>
+  `)
 }
 
 function day1Html() {
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
-          <tr>
-            <td style="padding:64px 48px;text-align:center;">
-              <p style="margin:0 0 24px;font-size:13px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter</p>
-              <h1 style="margin:0 0 28px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;">
-                Tomorrow.
-              </h1>
-              <p style="margin:0;font-size:17px;color:#3A2418;line-height:1.9;">
-                Tomorrow at 9am, your capsule opens.<br/>Tonight, prepare yourself.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background:#FFFBF5;padding:20px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
-              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
-                The Letter &mdash; Time capsules for your future self.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`.trim()
+  return emailShell(`
+    <h1 style="margin:0 0 24px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;font-family:Georgia,serif;">
+      Tomorrow.
+    </h1>
+    <p style="margin:0;font-size:17px;color:#393232;line-height:1.9;">
+      Tomorrow at 9am, your capsule opens.<br/>Tonight, prepare yourself.
+    </p>
+  `)
 }
 
 // Returns the target date string (YYYY-MM-DD UTC) that is `daysAhead` days from today
