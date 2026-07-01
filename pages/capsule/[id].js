@@ -18,6 +18,7 @@ export default function CapsuleDetail() {
   const router = useRouter()
   const { id } = router.query
   const [capsule, setCapsule] = useState(null)
+  const [isRecipientView, setIsRecipientView] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cart, setCart] = useState([])
@@ -29,13 +30,32 @@ export default function CapsuleDetail() {
         if (authError || !user) { router.push('/'); return }
         if (!id) return
 
-        const { data: arr, error: capsuleError } = await supabase
+        // Try as owner first
+        const { data: ownerData, error: ownerError } = await supabase
           .from('capsules').select('*').eq('id', id).eq('user_id', user.id)
 
-        if (capsuleError) setError(`Failed to load capsule: ${capsuleError.message}`)
-        else if (!arr || arr.length === 0) setError('Capsule not found.')
-        else setCapsule(arr[0])
+        if (!ownerError && ownerData && ownerData.length > 0) {
+          setCapsule(ownerData[0])
+          setIsRecipientView(false)
+          setLoading(false)
+          return
+        }
 
+        // Try as gift recipient (requires RLS policy: is_gift=true AND gift_recipient_email=auth email)
+        const { data: giftData, error: giftError } = await supabase
+          .from('capsules').select('*')
+          .eq('id', id)
+          .eq('is_gift', true)
+          .eq('gift_recipient_email', user.email)
+
+        if (!giftError && giftData && giftData.length > 0) {
+          setCapsule(giftData[0])
+          setIsRecipientView(true)
+          setLoading(false)
+          return
+        }
+
+        setError('Capsule not found.')
         setLoading(false)
       } catch (err) {
         setError(`An error occurred: ${err.message}`)
@@ -52,7 +72,18 @@ export default function CapsuleDetail() {
 
   const addToCart = () => {
     if (!capsule) return
-    const newItem = { capsuleId: capsule.id, title: capsule.title, deliveryDate: '', years: null, price: null }
+    const newItem = {
+      capsuleId: capsule.id,
+      title: capsule.title,
+      isGift: capsule.is_gift || false,
+      giftFromName: capsule.gift_from_name || null,
+      giftRecipientEmail: capsule.gift_recipient_email || null,
+      deliveryDate: '',
+      years: null,
+      price: null,
+      isFounderPromo: false,
+      dateError: null,
+    }
     const currentCart = loadCart()
     const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
     saveCart(newCart)
@@ -87,7 +118,7 @@ export default function CapsuleDetail() {
             <p style={{ fontFamily: F.serif, fontSize: 20, color: INK, marginBottom: 16 }}>
               {error || 'Capsule not found'}
             </p>
-            <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', backgroundColor: WINE, color: CREAM, border: 'none', borderRadius: 8, fontSize: 14, fontFamily: F.sans }}>
+            <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', backgroundColor: WINE, color: CREAM, border: 'none', borderRadius: 8, fontSize: 14, fontFamily: F.sans, cursor: 'pointer' }}>
               Back to dashboard
             </button>
           </div>
@@ -98,6 +129,7 @@ export default function CapsuleDetail() {
   }
 
   const sc = statusColor(capsule.status)
+  const isGift = capsule.is_gift || false
 
   return (
     <>
@@ -110,23 +142,51 @@ export default function CapsuleDetail() {
       <div style={st.page}>
         <div style={st.content}>
 
+          {/* Gift banner for recipient */}
+          {isGift && isRecipientView && (
+            <div style={st.giftBanner}>
+              <span style={st.giftBannerIcon}>🎁</span>
+              <div>
+                <p style={st.giftBannerFrom}>A message from <strong>{capsule.gift_from_name}</strong></p>
+                <p style={st.giftBannerSub}>This time capsule was written for you.</p>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div style={st.header}>
             <div style={st.meta}>
               <span style={{ ...st.statusBadge, backgroundColor: sc.bg, color: sc.text }}>
                 {capsule.status.charAt(0).toUpperCase() + capsule.status.slice(1)}
               </span>
+              {isGift && !isRecipientView && (
+                <span style={st.giftBadge}>🎁 Gift</span>
+              )}
               {capsule.status !== 'draft' && capsule.deliver_at && (
-                <span style={st.deliveryDate}>Opens {formatDate(capsule.deliver_at)}</span>
+                <span style={st.deliveryDate}>
+                  {capsule.status === 'delivered' ? 'Delivered' : 'Opens'} {formatDate(capsule.deliver_at)}
+                </span>
               )}
             </div>
             <h1 style={st.title}>{capsule.title}</h1>
-            <p style={st.created}>Created {formatDate(capsule.created_at)}</p>
+            {isGift && isRecipientView ? (
+              <p style={st.created}>From {capsule.gift_from_name}</p>
+            ) : (
+              <p style={st.created}>Created {formatDate(capsule.created_at)}</p>
+            )}
+
+            {/* Gift info for the gifter */}
+            {isGift && !isRecipientView && (
+              <div style={st.giftInfoBox}>
+                <p style={st.giftInfoLine}>🎁 Gifted to <strong>{capsule.gift_recipient_email}</strong></p>
+                <p style={st.giftInfoLine}>From name shown to recipient: <strong>{capsule.gift_from_name}</strong></p>
+              </div>
+            )}
           </div>
 
           {/* Message */}
           <div style={st.section}>
-            <h2 style={st.sectionTitle}>Your message</h2>
+            <h2 style={st.sectionTitle}>{isGift && isRecipientView ? 'Your message' : 'Message'}</h2>
             <div style={st.messageBox}>
               <p style={st.messageText}>{capsule.message}</p>
             </div>
@@ -136,7 +196,7 @@ export default function CapsuleDetail() {
           {(capsule.age || capsule.city || capsule.favorite_song || capsule.favorite_show ||
             capsule.future_vision || (capsule.personality_words && capsule.personality_words.length > 0)) && (
             <div style={st.section}>
-              <h2 style={st.sectionTitle}>Snapshot of you</h2>
+              <h2 style={st.sectionTitle}>Snapshot</h2>
               <div style={st.snapshotGrid}>
                 {capsule.age && <div style={st.snapshotItem}><p style={st.snapshotLabel}>Age</p><p style={st.snapshotValue}>{capsule.age}</p></div>}
                 {capsule.city && <div style={st.snapshotItem}><p style={st.snapshotLabel}>City</p><p style={st.snapshotValue}>{capsule.city}</p></div>}
@@ -148,15 +208,15 @@ export default function CapsuleDetail() {
               </div>
               {capsule.future_vision && (
                 <div style={st.visionBox}>
-                  <p style={st.visionLabel}>Your future vision</p>
+                  <p style={st.visionLabel}>Future vision</p>
                   <p style={st.visionText}>{capsule.future_vision}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Actions */}
-          {isDraft && (
+          {/* Actions — only for owner on draft */}
+          {isDraft && !isRecipientView && (
             <div style={st.actions}>
               {inCart ? (
                 <button onClick={() => router.push('/cart')} style={st.viewCartBtn}>
@@ -173,7 +233,7 @@ export default function CapsuleDetail() {
             </div>
           )}
 
-          {!isDraft && (
+          {(!isDraft || isRecipientView) && (
             <div style={{ marginBottom: 40 }}>
               <button onClick={() => router.push('/dashboard')} style={st.backBtn}>
                 ← Back to dashboard
@@ -193,22 +253,43 @@ const st = {
   page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
   content: { maxWidth: 760, margin: '0 auto', padding: '32px 16px 80px' },
 
+  giftBanner: {
+    display: 'flex', alignItems: 'flex-start', gap: 16,
+    backgroundColor: 'rgba(138,35,35,0.06)', border: `1.5px solid ${WINE}`,
+    borderRadius: 10, padding: '20px 24px', marginBottom: 20,
+  },
+  giftBannerIcon: { fontSize: 28, flexShrink: 0 },
+  giftBannerFrom: { fontFamily: F.sans, fontSize: 16, color: INK, margin: '0 0 4px' },
+  giftBannerSub: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
+
   header: {
     backgroundColor: CREAM, border: `1px solid ${BORDER}`,
     borderRadius: 10, padding: '28px 28px 24px', marginBottom: 20,
   },
-  meta: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 },
+  meta: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' },
   statusBadge: {
     fontFamily: F.sans, fontSize: 11, fontWeight: 700,
     padding: '3px 12px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
+  giftBadge: {
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700,
+    color: '#92400e', backgroundColor: '#fdf4e7',
+    padding: '3px 10px', borderRadius: 20,
   },
   deliveryDate: { fontFamily: F.sans, fontSize: 13, color: MUTED },
   title: {
     fontFamily: F.serif, fontSize: 28, fontWeight: 600,
     color: MAROON, margin: '0 0 8px', lineHeight: 1.3, wordBreak: 'break-word',
   },
-  created: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
+  created: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 0' },
+
+  giftInfoBox: {
+    marginTop: 14, padding: '12px 16px',
+    backgroundColor: 'rgba(77,0,0,0.04)', border: `1px solid ${BORDER}`,
+    borderRadius: 8,
+  },
+  giftInfoLine: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 4px' },
 
   section: {
     backgroundColor: CREAM, border: `1px solid ${BORDER}`,
@@ -244,14 +325,14 @@ const st = {
   actions: { display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 40 },
   sealBtn: {
     width: '100%', padding: 18, backgroundColor: WINE, color: CREAM,
-    border: 'none', borderRadius: 8, fontSize: 17, fontWeight: 600, fontFamily: F.sans,
+    border: 'none', borderRadius: 8, fontSize: 17, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
   viewCartBtn: {
     width: '100%', padding: 16, backgroundColor: 'transparent', color: WINE,
-    border: `2px solid ${WINE}`, borderRadius: 8, fontSize: 16, fontWeight: 600, fontFamily: F.sans,
+    border: `2px solid ${WINE}`, borderRadius: 8, fontSize: 16, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
   backBtn: {
     width: '100%', padding: 14, backgroundColor: CREAM, color: MUTED,
-    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans, cursor: 'pointer',
   },
 }

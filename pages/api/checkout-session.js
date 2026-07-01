@@ -11,6 +11,7 @@ const supabaseAdmin = createClient(
 )
 
 const PRICE_PER_YEAR = 1.85
+const GIFT_PRICE_PER_YEAR = 5.00
 
 function getAppUrl() {
   let url = process.env.NEXT_PUBLIC_APP_URL || 'https://letterapp-black.vercel.app'
@@ -26,7 +27,7 @@ function serverGetDays(deliveryDate) {
   return Math.round((deliver - today) / (1000 * 60 * 60 * 24))
 }
 
-function serverCalcPrice(deliveryDate) {
+function serverCalcPrice(deliveryDate, isGift = false) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const deliver = new Date(deliveryDate)
@@ -34,11 +35,44 @@ function serverCalcPrice(deliveryDate) {
   const ms = deliver - today
   if (ms <= 0) return null
   const years = Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24 * 365.25)))
-  return { years, price: +(years * PRICE_PER_YEAR).toFixed(2) }
+  const rate = isGift ? GIFT_PRICE_PER_YEAR : PRICE_PER_YEAR
+  return { years, price: +(years * rate).toFixed(2) }
 }
 
 function formatDate(ds) {
-  return new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  return new Date(ds).toLocaleDateString('en-US', {
+    timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric',
+  })
+}
+
+// Email shell shared by all branded emails in this file
+function emailShell(bodyContent) {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
+          <tr>
+            <td style="background:#4D0000;padding:20px 16px;text-align:center;">
+              <p style="margin:0;font-size:22px;color:#FFFBF5;font-family:Georgia,'Times New Roman',serif;font-weight:normal;letter-spacing:1px;">The Letter</p>
+            </td>
+          </tr>
+          ${bodyContent}
+          <tr>
+            <td style="background:#393232;padding:16px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#FFFBF5;font-family:Arial,sans-serif;">&copy; 2026 The Letter &nbsp;|&nbsp; hello@theletter.app</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`.trim()
 }
 
 function founderPromoEmailHtml(capsules, appUrl) {
@@ -50,59 +84,57 @@ function founderPromoEmailHtml(capsules, appUrl) {
       </div>`)
     .join('')
 
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#FFFBF5;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBF5;padding:48px 0;">
+  return emailShell(`
     <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFBF5;border-radius:10px;overflow:hidden;border:1px solid rgba(77,0,0,0.15);">
+      <td style="padding:48px 48px 24px;text-align:center;">
+        <p style="margin:0 0 12px;font-size:12px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">Founder Promotion</p>
+        <h1 style="margin:0 0 14px;font-size:26px;color:#4D0000;font-weight:normal;line-height:1.4;font-family:Georgia,serif;">
+          Your capsule${capsules.length !== 1 ? 's are' : ' is'} sealed &mdash; free. 🎉
+        </h1>
+        <p style="margin:0;font-size:15px;color:#7A6A5A;line-height:1.7;font-family:Arial,sans-serif;">
+          Thank you for being an early member of The Letter.
+        </p>
+      </td>
+    </tr>
+    <tr><td style="padding:0 48px 28px;">${capsuleList}</td></tr>
+    <tr>
+      <td style="padding:0 48px 40px;text-align:center;">
+        <p style="margin:0 0 28px;font-size:15px;color:#3A2418;line-height:1.8;font-family:Arial,sans-serif;">
+          As a Founder member, you sealed this capsule free as part of our early access program.
+        </p>
+        <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
           <tr>
-            <td style="padding:48px 48px 24px;text-align:center;">
-              <p style="margin:0 0 12px;font-size:12px;letter-spacing:3px;color:#8A2323;text-transform:uppercase;font-family:Arial,sans-serif;">The Letter &mdash; Founder Promotion</p>
-              <h1 style="margin:0 0 14px;font-size:26px;color:#4D0000;font-weight:normal;line-height:1.4;">
-                Your capsule${capsules.length !== 1 ? 's are' : ' is'} sealed &mdash; free. 🎉
-              </h1>
-              <p style="margin:0;font-size:15px;color:#7A6A5A;line-height:1.7;font-family:Arial,sans-serif;">
-                Thank you for being an early member of The Letter. Your capsule will arrive in your inbox when the time comes.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 48px 28px;">${capsuleList}</td>
-          </tr>
-          <tr>
-            <td style="padding:0 48px 40px;text-align:center;">
-              <p style="margin:0 0 28px;font-size:15px;color:#3A2418;line-height:1.8;font-family:Arial,sans-serif;">
-                As a Founder member, you sealed this capsule free as part of our early access program. Your feedback means everything to us.
-              </p>
-              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                <tr>
-                  <td style="background:#8A2323;border-radius:8px;text-align:center;">
-                    <a href="${appUrl}/dashboard"
-                       style="display:inline-block;padding:16px 40px;font-size:15px;color:#FFFBF5;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;">
-                      View your capsules
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="background:#FFFBF5;padding:20px 48px;border-top:1px solid rgba(77,0,0,0.15);text-align:center;">
-              <p style="margin:0;font-size:12px;color:rgba(77,0,0,0.4);line-height:1.8;font-family:Arial,sans-serif;">
-                The Letter &mdash; Time capsules for your future self.
-              </p>
+            <td style="background:#8A2323;border-radius:8px;text-align:center;">
+              <a href="${appUrl}/dashboard"
+                 style="display:inline-block;padding:16px 40px;font-size:15px;color:#FFFBF5;text-decoration:none;font-family:Arial,sans-serif;font-weight:bold;">
+                View your capsules
+              </a>
             </td>
           </tr>
         </table>
       </td>
     </tr>
-  </table>
-</body>
-</html>`.trim()
+  `)
+}
+
+// Sent to the gift RECIPIENT when their gift is sealed (notification, no open button yet)
+function giftSealedNotificationHtml(fromName, deliveryDate) {
+  return emailShell(`
+    <tr>
+      <td style="padding:56px 48px;text-align:center;background:#FFFBF5;">
+        <h1 style="margin:0 0 24px;font-size:28px;color:#4D0000;font-weight:normal;line-height:1.5;font-family:Georgia,serif;">
+          You received a gift. 🎁
+        </h1>
+        <p style="margin:0 0 20px;font-size:17px;color:#393232;line-height:1.9;">
+          <strong>${fromName}</strong> sent you a time capsule message.
+        </p>
+        <p style="margin:0;font-size:16px;color:#7A6A5A;line-height:1.8;">
+          It will open on <strong style="color:#3A2418;">${formatDate(deliveryDate)}</strong>.<br/>
+          On that day, you&rsquo;ll receive a link to open it.
+        </p>
+      </td>
+    </tr>
+  `)
 }
 
 export default async function handler(req, res) {
@@ -135,10 +167,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Each cart item needs capsuleId and deliveryDate' })
       }
 
-      // Verify capsule exists, belongs to user, and is a draft
       const { data, error } = await supabaseAdmin
         .from('capsules')
-        .select('id, title, status, user_id')
+        .select('id, title, status, user_id, is_gift, gift_recipient_email, gift_from_name')
         .eq('id', capsuleId)
         .eq('user_id', userId)
 
@@ -146,23 +177,33 @@ export default async function handler(req, res) {
       if (!data || data.length === 0) return res.status(404).json({ error: `Capsule "${capsuleId}" not found or access denied` })
       if (data[0].status !== 'draft') return res.status(400).json({ error: `Capsule "${data[0].title}" is no longer a draft` })
 
-      // Server-side date validation
       const days = serverGetDays(deliveryDate)
       if (days < 30) {
         return res.status(400).json({ error: `Delivery date for "${data[0].title}" must be at least 1 month from today` })
       }
 
       const isPromo = days <= 180
+      const isGift = data[0].is_gift || false
+      const giftRecipientEmail = data[0].gift_recipient_email || null
+      const giftFromName = data[0].gift_from_name || null
 
       if (isPromo) {
-        validatedItems.push({ capsuleId, title: data[0].title, deliveryDate, years: null, price: 0, isFounderPromo: true })
+        validatedItems.push({
+          capsuleId, title: data[0].title, deliveryDate,
+          years: null, price: 0, isFounderPromo: true,
+          isGift, giftRecipientEmail, giftFromName,
+        })
       } else {
-        const pricing = serverCalcPrice(deliveryDate)
+        const pricing = serverCalcPrice(deliveryDate, isGift)
         if (!pricing) return res.status(400).json({ error: `Invalid delivery date for "${data[0].title}"` })
-        validatedItems.push({ capsuleId, title: data[0].title, deliveryDate, years: pricing.years, price: pricing.price, isFounderPromo: false })
+        validatedItems.push({
+          capsuleId, title: data[0].title, deliveryDate,
+          years: pricing.years, price: pricing.price, isFounderPromo: false,
+          isGift, giftRecipientEmail, giftFromName,
+        })
       }
 
-      console.log(`  "${data[0].title}" | days: ${days} | ${isPromo ? 'PROMO FREE' : `$${validatedItems[validatedItems.length - 1].price}`}`)
+      console.log(`  "${data[0].title}" | days: ${days} | ${isGift ? 'GIFT' : 'SELF'} | ${isPromo ? 'PROMO FREE' : `$${validatedItems[validatedItems.length - 1].price}`}`)
     }
 
     const promoItems = validatedItems.filter(i => i.isFounderPromo)
@@ -171,7 +212,7 @@ export default async function handler(req, res) {
     // Seal promo items immediately for free
     if (promoItems.length > 0) {
       for (const item of promoItems) {
-        // Step 1: seal using only original columns — always safe regardless of schema cache
+        // Step 1: seal using only original columns — safe regardless of schema cache
         const { error: sealError } = await supabaseAdmin
           .from('capsules')
           .update({ status: 'sealed', deliver_at: item.deliveryDate })
@@ -192,9 +233,24 @@ export default async function handler(req, res) {
         }
 
         console.log(`  Sealed (free): "${item.title}" → ${item.deliveryDate}`)
+
+        // If this is a gift, notify the recipient
+        if (item.isGift && item.giftRecipientEmail) {
+          try {
+            await resend.emails.send({
+              from: 'The Letter <noreply@theletter.app>',
+              to: item.giftRecipientEmail,
+              subject: `You received a gift from ${item.giftFromName} 🎁`,
+              html: giftSealedNotificationHtml(item.giftFromName, item.deliveryDate),
+            })
+            console.log(`  Gift notification sent to: ${item.giftRecipientEmail}`)
+          } catch (emailErr) {
+            console.error('  Gift notification email failed (non-fatal):', emailErr.message)
+          }
+        }
       }
 
-      // Send promo confirmation email (non-fatal)
+      // Send promo confirmation to the gifter/user (non-fatal)
       try {
         await resend.emails.send({
           from: 'The Letter <noreply@theletter.app>',
@@ -236,7 +292,10 @@ export default async function handler(req, res) {
       : `Seal ${paidItems.length} time capsules`
 
     const description = paidItems
-      .map(item => `${item.title} — ${item.years}yr × $${PRICE_PER_YEAR}/yr = $${item.price.toFixed(2)}`)
+      .map(item => {
+        const rate = item.isGift ? GIFT_PRICE_PER_YEAR : PRICE_PER_YEAR
+        return `${item.title}${item.isGift ? ' (gift)' : ''} — ${item.years}yr × $${rate.toFixed(2)}/yr = $${item.price.toFixed(2)}`
+      })
       .join('; ')
 
     const session = await stripe.checkout.sessions.create({

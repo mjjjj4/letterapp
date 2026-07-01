@@ -14,10 +14,16 @@ const INK = '#3A2418'
 const MUTED = '#7A6A5A'
 const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
 
+function fmtPhone(digits) {
+  if (!digits || digits.length < 10) return digits
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`
+}
+
 export default function Dashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [capsules, setCapsules] = useState([])
+  const [receivedGifts, setReceivedGifts] = useState([])
   const [loading, setLoading] = useState(true)
   const [cart, setCart] = useState([])
   const [deleting, setDeleting] = useState(null)
@@ -28,12 +34,24 @@ export default function Dashboard() {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (error || !user) { router.push('/'); return }
         setUser(user)
+
+        // All capsules owned by this user
         const { data, error: capsuleError } = await supabase
           .from('capsules')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
         if (!capsuleError) setCapsules(data || [])
+
+        // Gift capsules sent TO this user (by their email)
+        const { data: gifts, error: giftsError } = await supabase
+          .from('capsules')
+          .select('*')
+          .eq('is_gift', true)
+          .eq('gift_recipient_email', user.email)
+          .order('created_at', { ascending: false })
+        if (!giftsError) setReceivedGifts(gifts || [])
+
         setLoading(false)
       } catch {
         router.push('/')
@@ -48,7 +66,18 @@ export default function Dashboard() {
     new Date(ds).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
   const addToCart = (capsule) => {
-    const newItem = { capsuleId: capsule.id, title: capsule.title, deliveryDate: '', years: null, price: null }
+    const newItem = {
+      capsuleId: capsule.id,
+      title: capsule.title,
+      isGift: capsule.is_gift || false,
+      giftFromName: capsule.gift_from_name || null,
+      giftRecipientEmail: capsule.gift_recipient_email || null,
+      deliveryDate: '',
+      years: null,
+      price: null,
+      isFounderPromo: false,
+      dateError: null,
+    }
     const currentCart = loadCart()
     const newCart = [...currentCart.filter(x => x.capsuleId !== capsule.id), newItem]
     saveCart(newCart)
@@ -80,10 +109,14 @@ export default function Dashboard() {
     )
   }
 
-  const drafts = capsules.filter(c => c.status === 'draft')
-  const sealed = capsules.filter(c => c.status === 'sealed')
-  const delivered = capsules.filter(c => c.status === 'delivered')
-  const isFirstEver = capsules.length === 0
+  // Split owned capsules into self vs gift-sent
+  const selfCapsules = capsules.filter(c => !c.is_gift)
+  const giftsSent = capsules.filter(c => c.is_gift)
+
+  const drafts = selfCapsules.filter(c => c.status === 'draft')
+  const sealed = selfCapsules.filter(c => c.status === 'sealed')
+  const delivered = selfCapsules.filter(c => c.status === 'delivered')
+  const isFirstEver = capsules.length === 0 && receivedGifts.length === 0
 
   return (
     <>
@@ -261,6 +294,120 @@ export default function Dashboard() {
             </section>
           )}
 
+          {/* GIFTS SENT SECTION */}
+          {giftsSent.length > 0 && (
+            <section style={s.section}>
+              <div style={s.sectionHeading}>
+                <span style={s.sectionTitle}>🎁 Gifts Sent</span>
+                <span style={{ ...s.sectionCount, backgroundColor: '#fdf4e7', color: '#92400e' }}>{giftsSent.length}</span>
+              </div>
+              <div style={s.cardList}>
+                {giftsSent.map(c => (
+                  <div key={c.id} style={s.giftSentCard}>
+                    <div style={s.giftSentInner}>
+                      <div style={{ flex: 1 }}>
+                        <div style={s.giftSentTop}>
+                          <span style={s.giftSentBadge}>
+                            {c.status === 'draft' ? 'Draft' : c.status === 'sealed' ? '🔒 Sealed' : '✓ Delivered'}
+                          </span>
+                          {c.is_founder_promo && <span style={s.founderBadge}>Founder Promo</span>}
+                        </div>
+                        <h3 style={s.giftSentTitle}>{c.title}</h3>
+                        <p style={s.giftSentMeta}>
+                          🎁 Gift from you to <strong>{c.gift_from_name}</strong>
+                        </p>
+                        <p style={s.giftSentMeta}>
+                          To: {c.gift_recipient_email}
+                          {c.gift_recipient_phone && ` · ${fmtPhone(c.gift_recipient_phone)}`}
+                        </p>
+                        {c.status === 'draft' && (
+                          <p style={s.giftSentDate}>Not yet sealed</p>
+                        )}
+                        {c.status === 'sealed' && c.deliver_at && (
+                          <p style={s.giftSentDate}>Delivers {formatDate(c.deliver_at)}</p>
+                        )}
+                        {c.status === 'delivered' && c.deliver_at && (
+                          <p style={{ ...s.giftSentDate, color: '#065f46' }}>
+                            Delivered {formatDate(c.delivered_at || c.deliver_at)}
+                          </p>
+                        )}
+                      </div>
+                      {c.status === 'draft' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                          <button onClick={() => addToCart(c)} style={s.viewSealedBtn}>
+                            Seal
+                          </button>
+                          <button onClick={() => router.push(`/create?id=${c.id}&mode=edit`)} style={{ ...s.viewSealedBtn, fontSize: 12 }}>
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* GIFTS RECEIVED SECTION */}
+          {receivedGifts.length > 0 && (
+            <section style={s.section}>
+              <div style={s.sectionHeading}>
+                <span style={s.sectionTitle}>🎁 Gifts Received</span>
+                <span style={{ ...s.sectionCount, backgroundColor: '#fdf4e7', color: '#92400e' }}>{receivedGifts.length}</span>
+              </div>
+              <div style={s.deliveredBanner}>
+                <span style={s.deliveredBannerIcon}>🎁</span>
+                <span style={s.deliveredBannerText}>Someone sent you a time capsule message.</span>
+              </div>
+              <div style={s.cardList}>
+                {receivedGifts.map(c => (
+                  <div key={c.id} style={s.giftReceivedCard}>
+                    <div style={s.deliveredHeader}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                          <span style={
+                            c.status === 'delivered' ? s.deliveredBadge
+                            : c.status === 'sealed' ? s.sealedBadge
+                            : s.draftBadge
+                          }>
+                            {c.status === 'delivered' ? 'Ready to open'
+                              : c.status === 'sealed' ? 'Arriving soon'
+                              : 'Pending'}
+                          </span>
+                        </div>
+                        <h3 style={s.deliveredTitle}>{c.title}</h3>
+                        <p style={{ ...s.deliveredDate, fontWeight: 600 }}>
+                          🎁 From {c.gift_from_name}
+                        </p>
+                        {c.status === 'sealed' && c.deliver_at && (
+                          <p style={s.deliveredDate}>Arrives {formatDate(c.deliver_at)}</p>
+                        )}
+                        {c.status === 'delivered' && c.deliver_at && (
+                          <p style={{ ...s.deliveredDate, color: '#065f46' }}>
+                            Delivered {formatDate(c.delivered_at || c.deliver_at)}
+                          </p>
+                        )}
+                      </div>
+                      {c.status === 'delivered' && (
+                        <button onClick={() => router.push(`/capsule/${c.id}`)} style={s.viewDeliveredBtn}>
+                          Open gift
+                        </button>
+                      )}
+                    </div>
+                    {c.status === 'delivered' && c.message && (
+                      <div style={s.deliveredMessageBox}>
+                        <p style={s.deliveredMessage}>
+                          {c.message.length > 240 ? c.message.substring(0, 240) + '…' : c.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
         </div>
       </div>
 
@@ -271,29 +418,22 @@ export default function Dashboard() {
 
 const s = {
   page: { minHeight: 'calc(100vh - 64px)', backgroundColor: CREAM },
-
   body: { maxWidth: 700, margin: '0 auto', padding: '32px 16px 80px' },
   topBar: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: 32, flexWrap: 'wrap', gap: 12,
   },
-  welcomeLabel: {
-    fontFamily: F.sans, fontSize: 11, color: MUTED, margin: '0 0 2px',
-    textTransform: 'uppercase', letterSpacing: '0.8px',
-  },
+  welcomeLabel: { fontFamily: F.sans, fontSize: 11, color: MUTED, margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.8px' },
   welcomeEmail: { fontFamily: F.sans, fontSize: 15, color: INK, margin: 0, fontWeight: 600 },
   newBtn: {
     padding: '10px 20px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
-    fontFamily: F.sans, whiteSpace: 'nowrap',
+    fontFamily: F.sans, whiteSpace: 'nowrap', cursor: 'pointer',
   },
 
   section: { marginBottom: 40 },
   sectionHeading: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 },
-  sectionTitle: {
-    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: MUTED,
-    textTransform: 'uppercase', letterSpacing: '1px',
-  },
+  sectionTitle: { fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '1px' },
   sectionCount: {
     fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: MUTED,
     backgroundColor: 'rgba(77,0,0,0.08)', padding: '2px 10px', borderRadius: 20,
@@ -305,23 +445,15 @@ const s = {
     borderRadius: 10, padding: '40px 24px', textAlign: 'center',
   },
   emptyIcon: { fontSize: 36, margin: '0 0 12px' },
-  emptyHeadline: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
-    color: MAROON, margin: '0 0 8px',
-  },
-  emptyBody: {
-    fontFamily: F.sans, fontSize: 14, color: MUTED,
-    margin: '0 auto 24px', lineHeight: 1.6, maxWidth: 320,
-  },
+  emptyHeadline: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: MAROON, margin: '0 0 8px' },
+  emptyBody: { fontFamily: F.sans, fontSize: 14, color: MUTED, margin: '0 auto 24px', lineHeight: 1.6, maxWidth: 320 },
   emptyBtn: {
     padding: '12px 24px', backgroundColor: WINE, color: CREAM,
-    border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600,
-    fontFamily: F.sans,
+    border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
 
   draftCard: {
-    backgroundColor: CREAM,
-    border: `1px solid ${BORDER}`, borderLeft: `4px solid ${WINE}`,
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${WINE}`,
     borderRadius: 10, padding: 20,
   },
   draftTop: { marginBottom: 14 },
@@ -335,31 +467,27 @@ const s = {
     fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: '#065f46',
     backgroundColor: '#d1fae5', padding: '3px 10px', borderRadius: 20,
   },
-  cardTitle: {
-    fontFamily: F.serif, fontSize: 20, fontWeight: 600,
-    color: INK, margin: 0, lineHeight: 1.3, wordBreak: 'break-word',
-  },
+  cardTitle: { fontFamily: F.serif, fontSize: 20, fontWeight: 600, color: INK, margin: 0, lineHeight: 1.3, wordBreak: 'break-word' },
   messagePreview: {
-    fontFamily: F.sans, fontSize: 14, color: MUTED,
-    lineHeight: 1.75, margin: '0 0 20px',
+    fontFamily: F.sans, fontSize: 14, color: MUTED, lineHeight: 1.75, margin: '0 0 20px',
     fontStyle: 'italic', borderLeft: `3px solid ${BORDER}`, paddingLeft: 14,
   },
   draftActions: { display: 'flex', gap: 10 },
   sealBtn: {
     flex: 1, padding: 13, backgroundColor: WINE, color: CREAM,
-    border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
+    border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
   viewCartBtn: {
     flex: 1, padding: 13, backgroundColor: 'transparent', color: WINE,
-    border: `1.5px solid ${WINE}`, borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans,
+    border: `1.5px solid ${WINE}`, borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
   editBtn: {
     padding: '13px 20px', backgroundColor: CREAM, color: INK,
-    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans,
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 14, fontFamily: F.sans, cursor: 'pointer',
   },
   deleteBtn: {
     padding: '13px 14px', backgroundColor: CREAM, color: '#dc2626',
-    border: '1px solid #fecaca', borderRadius: 8, fontSize: 15, lineHeight: 1,
+    border: '1px solid #fecaca', borderRadius: 8, fontSize: 15, lineHeight: 1, cursor: 'pointer',
   },
 
   sealedCard: {
@@ -380,15 +508,13 @@ const s = {
     backgroundColor: 'rgba(77,0,0,0.08)', padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
-  sealedTitle: {
-    fontFamily: F.serif, fontSize: 17, fontWeight: 600,
-    color: MUTED, margin: '0 0 4px', wordBreak: 'break-word',
-  },
+  sealedTitle: { fontFamily: F.serif, fontSize: 17, fontWeight: 600, color: MUTED, margin: '0 0 4px', wordBreak: 'break-word' },
   sealedDate: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 4px' },
   sealedHint: { fontFamily: F.sans, fontSize: 12, color: '#aaa', margin: 0, fontStyle: 'italic' },
   viewSealedBtn: {
     padding: '10px 18px', backgroundColor: 'transparent', color: MUTED,
-    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, fontFamily: F.sans, whiteSpace: 'nowrap',
+    border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, fontFamily: F.sans,
+    whiteSpace: 'nowrap', cursor: 'pointer',
   },
 
   deliveredBanner: {
@@ -402,25 +528,18 @@ const s = {
     backgroundColor: CREAM, border: '1px solid #d1fae5',
     borderLeft: '4px solid #10b981', borderRadius: 10, padding: 20,
   },
-  deliveredHeader: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'flex-start', gap: 12, marginBottom: 16,
-  },
+  deliveredHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
   deliveredBadge: {
-    fontFamily: F.sans, fontSize: 11, fontWeight: 700,
-    color: '#065f46', backgroundColor: '#d1fae5',
-    padding: '3px 10px', borderRadius: 20,
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: '#065f46',
+    backgroundColor: '#d1fae5', padding: '3px 10px', borderRadius: 20,
     textTransform: 'uppercase', letterSpacing: '0.5px',
   },
-  deliveredTitle: {
-    fontFamily: F.serif, fontSize: 18, fontWeight: 600,
-    color: INK, margin: '0 0 4px', wordBreak: 'break-word',
-  },
+  deliveredTitle: { fontFamily: F.serif, fontSize: 18, fontWeight: 600, color: INK, margin: '0 0 4px', wordBreak: 'break-word' },
   deliveredDate: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
   viewDeliveredBtn: {
     padding: '10px 18px', backgroundColor: '#10b981', color: '#fff',
     border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
-    fontFamily: F.sans, whiteSpace: 'nowrap', flexShrink: 0,
+    fontFamily: F.sans, whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer',
   },
   deliveredMessageBox: { borderLeft: '3px solid #6ee7b7', paddingLeft: 14, marginBottom: 16 },
   deliveredMessage: {
@@ -431,12 +550,30 @@ const s = {
   snapshotRow: { display: 'flex', flexWrap: 'wrap', gap: 8 },
   chip: {
     backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
-    borderRadius: 8, padding: '6px 12px',
-    display: 'flex', flexDirection: 'column', gap: 2,
+    borderRadius: 8, padding: '6px 12px', display: 'flex', flexDirection: 'column', gap: 2,
   },
-  chipLabel: {
-    fontFamily: F.sans, fontSize: 10, fontWeight: 700,
-    color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.5px',
-  },
+  chipLabel: { fontFamily: F.sans, fontSize: 10, fontWeight: 700, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.5px' },
   chipValue: { fontFamily: F.sans, fontSize: 13, color: '#065f46', fontWeight: 700 },
+
+  // Gifts Sent
+  giftSentCard: {
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderLeft: '4px solid #d97706', borderRadius: 10, padding: '18px 20px',
+  },
+  giftSentInner: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  giftSentTop: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 },
+  giftSentBadge: {
+    fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: '#92400e',
+    backgroundColor: '#fdf4e7', padding: '3px 10px', borderRadius: 20,
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
+  giftSentTitle: { fontFamily: F.serif, fontSize: 17, fontWeight: 600, color: INK, margin: '0 0 6px', wordBreak: 'break-word' },
+  giftSentMeta: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: '0 0 3px' },
+  giftSentDate: { fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0', fontStyle: 'italic' },
+
+  // Gifts Received
+  giftReceivedCard: {
+    backgroundColor: CREAM, border: `1px solid ${BORDER}`,
+    borderLeft: '4px solid #d97706', borderRadius: 10, padding: 20,
+  },
 }

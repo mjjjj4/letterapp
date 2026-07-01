@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { supabase } from '../lib/supabase'
-import { calcPrice, getPromoInfo, describeTime, getMinDate, loadCart, saveCart } from '../lib/cart'
+import { calcPrice, getPromoInfo, describeTime, getMinDate, loadCart, saveCart, GIFT_PRICE_PER_YEAR } from '../lib/cart'
 import SiteNav from '../components/SiteNav'
 import SiteFooter from '../components/SiteFooter'
 
@@ -13,6 +13,11 @@ const BORDER = 'rgba(77, 0, 0, 0.15)'
 const INK = '#3A2418'
 const MUTED = '#7A6A5A'
 const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sans-serif" }
+
+function fmtPhone(digits) {
+  if (!digits || digits.length < 10) return digits
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`
+}
 
 export default function Cart() {
   const router = useRouter()
@@ -43,6 +48,8 @@ export default function Cart() {
 
   const updateDate = (capsuleId, dateStr) => {
     const info = getPromoInfo(dateStr)
+    const cartItem = cart.find(i => i.capsuleId === capsuleId)
+    const isGift = cartItem?.isGift || false
     let years = null
     let price = null
     let isFounderPromo = false
@@ -56,7 +63,7 @@ export default function Cart() {
       isFounderPromo = true
       price = 0
     } else if (info?.standard) {
-      const pricing = calcPrice(dateStr)
+      const pricing = calcPrice(dateStr, isGift)
       if (pricing) { years = pricing.years; price = pricing.price }
     }
 
@@ -70,7 +77,6 @@ export default function Cart() {
     })
   }
 
-  // An item is "ready" if it has a date, no error, and price is set (0 is valid for promo)
   const allDatesSet = cart.length > 0 && cart.every(
     item => item.deliveryDate && !item.dateError && item.price !== null
   )
@@ -138,11 +144,10 @@ export default function Cart() {
             </div>
           ) : (
             <>
-              {/* Promo banner */}
               <div style={cs.promoBanner}>
                 <span style={cs.promoBannerIcon}>🎉</span>
                 <p style={cs.promoBannerText}>
-                  <strong>Founder Promotion:</strong> Select a delivery date 1–6 months from today and seal your capsule for <strong>free</strong>.
+                  <strong>Founder Promotion:</strong> Select a delivery date 1–6 months from today and seal your capsule for <strong>free</strong> — even gift capsules.
                 </p>
               </div>
 
@@ -155,7 +160,17 @@ export default function Cart() {
                   return (
                     <div key={item.capsuleId} style={cs.cartItem}>
                       <div style={cs.itemHeader}>
-                        <h3 style={cs.itemTitle}>{item.title}</h3>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {item.isGift && (
+                            <p style={cs.giftTag}>🎁 Gift from {item.giftFromName || 'you'}</p>
+                          )}
+                          <h3 style={cs.itemTitle}>{item.title}</h3>
+                          {item.isGift && item.giftRecipientEmail && (
+                            <p style={cs.giftRecipient}>
+                              To: {item.giftRecipientEmail}
+                            </p>
+                          )}
+                        </div>
                         <button onClick={() => removeItem(item.capsuleId)} style={cs.removeBtn}>Remove</button>
                       </div>
 
@@ -201,18 +216,24 @@ export default function Cart() {
                             </div>
                             <div style={cs.priceRow}>
                               <span style={cs.priceLabel}>Rate</span>
-                              <span style={cs.priceValue}>$1.85/year</span>
+                              <span style={cs.priceValue}>
+                                {item.isGift
+                                  ? `$${GIFT_PRICE_PER_YEAR.toFixed(2)}/year (gift)`
+                                  : '$1.85/year'}
+                              </span>
                             </div>
                             <div style={{ ...cs.priceRow, borderTop: `1px solid ${BORDER}`, paddingTop: 10, marginTop: 4 }}>
                               <span style={{ ...cs.priceLabel, fontWeight: 700, color: INK }}>
-                                {item.years} yr &times; $1.85
+                                {item.years} yr &times; ${item.isGift ? GIFT_PRICE_PER_YEAR.toFixed(2) : '1.85'}
                               </span>
                               <span style={cs.itemPrice}>${item.price.toFixed(2)}</span>
                             </div>
-                            <div style={cs.donationLine}>
-                              <span style={cs.donationLabel}>💛 NPCF donation (5% incl.)</span>
-                              <span style={cs.donationValue}>${(item.price * 0.05).toFixed(2)}</span>
-                            </div>
+                            {!item.isGift && (
+                              <div style={cs.donationLine}>
+                                <span style={cs.donationLabel}>💛 NPCF donation (5% incl.)</span>
+                                <span style={cs.donationValue}>${(item.price * 0.05).toFixed(2)}</span>
+                              </div>
+                            )}
                           </div>
                         )
                       )}
@@ -240,7 +261,9 @@ export default function Cart() {
                   <p style={cs.summaryBreakdown}>
                     {cart.map((item, i) => (
                       <span key={item.capsuleId}>
-                        {item.isFounderPromo ? 'Founder Promo' : `${item.years}yr × $1.85`}
+                        {item.isFounderPromo
+                          ? 'Founder Promo'
+                          : `${item.years}yr × $${item.isGift ? GIFT_PRICE_PER_YEAR.toFixed(2) : '1.85'}`}
                         {i < cart.length - 1 ? ' + ' : ''}
                       </span>
                     ))}
@@ -282,9 +305,9 @@ export default function Cart() {
                 : (
                   <>
                     <p style={cs.secureNote}>🔒 Secure checkout powered by Stripe</p>
-                    {allDatesSet && total > 0 && (
+                    {allDatesSet && total > 0 && cart.some(i => !i.isGift) && (
                       <p style={cs.npcfNote}>
-                        💛 Includes a <strong>${(total * 0.05).toFixed(2)}</strong> donation to the{' '}
+                        💛 Includes a <strong>${(cart.filter(i => !i.isGift).reduce((s, i) => s + (i.price || 0), 0) * 0.05).toFixed(2)}</strong> donation to the{' '}
                         <a href="https://nationalpcf.org" target="_blank" rel="noopener noreferrer" style={{ color: WINE, fontWeight: 600 }}>
                           National Pediatric Cancer Foundation
                         </a>
@@ -336,6 +359,7 @@ const cs = {
   dashBtn: {
     padding: '12px 28px', backgroundColor: WINE, color: CREAM,
     border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: F.sans,
+    cursor: 'pointer',
   },
 
   errorBox: {
@@ -353,14 +377,21 @@ const cs = {
     display: 'flex', justifyContent: 'space-between',
     alignItems: 'flex-start', gap: 12, marginBottom: 16,
   },
+  giftTag: {
+    fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: WINE,
+    margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
   itemTitle: {
     fontFamily: F.serif, fontSize: 16, fontWeight: 600,
-    color: INK, margin: 0, wordBreak: 'break-word', flex: 1, lineHeight: 1.4,
+    color: INK, margin: 0, wordBreak: 'break-word', lineHeight: 1.4,
+  },
+  giftRecipient: {
+    fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '4px 0 0',
   },
   removeBtn: {
     padding: '5px 12px', backgroundColor: 'transparent', color: '#dc2626',
     border: '1px solid #fecaca', borderRadius: 6, fontSize: 12,
-    fontFamily: F.sans, whiteSpace: 'nowrap', flexShrink: 0,
+    fontFamily: F.sans, whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer',
   },
 
   dateSection: { marginBottom: 12, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' },
@@ -370,22 +401,19 @@ const cs = {
   },
   dateInputEmpty: {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px',
-    border: `1.5px dashed ${BORDER}`, borderRadius: 8,
+    padding: '10px 12px', border: `1.5px dashed ${BORDER}`, borderRadius: 8,
     fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: CREAM,
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   dateInputValid: {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px',
-    border: '1.5px solid #10b981', borderRadius: 8,
+    padding: '10px 12px', border: '1.5px solid #10b981', borderRadius: 8,
     fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#f0fdf4',
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   dateInputError: {
     display: 'block', width: '100%', maxWidth: '100%', minWidth: 0,
-    padding: '10px 12px',
-    border: '1.5px solid #dc2626', borderRadius: 8,
+    padding: '10px 12px', border: '1.5px solid #dc2626', borderRadius: 8,
     fontSize: 16, fontFamily: F.sans, boxSizing: 'border-box', backgroundColor: '#fef2f2',
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
@@ -395,19 +423,11 @@ const cs = {
     backgroundColor: 'rgba(77,0,0,0.04)', border: `1px solid ${BORDER}`,
     borderRadius: 8, padding: '12px 14px', marginTop: 4,
   },
-  promoRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-  },
-  promoTag: {
-    fontFamily: F.sans, fontSize: 13, fontWeight: 700, color: WINE,
-    margin: '0 0 4px',
-  },
+  promoRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  promoTag: { fontFamily: F.sans, fontSize: 13, fontWeight: 700, color: WINE, margin: '0 0 4px' },
   promoDelivery: { fontFamily: F.sans, fontSize: 12, color: INK, margin: '0 0 2px' },
   promoWindow: { fontFamily: F.sans, fontSize: 11, color: MUTED, margin: 0 },
-  promoFree: {
-    fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE,
-    flexShrink: 0,
-  },
+  promoFree: { fontFamily: F.sans, fontSize: 22, fontWeight: 700, color: WINE, flexShrink: 0 },
 
   priceBreakdown: {
     backgroundColor: CREAM, border: `1px solid ${BORDER}`,
@@ -432,10 +452,7 @@ const cs = {
   summaryPending: { fontFamily: F.sans, fontSize: 13, color: MUTED, fontStyle: 'italic' },
   summaryBreakdown: { fontFamily: F.sans, fontSize: 13, color: MUTED, margin: 0 },
 
-  allDatesHint: {
-    fontFamily: F.sans, fontSize: 13, color: MUTED,
-    textAlign: 'center', margin: '0 0 16px',
-  },
+  allDatesHint: { fontFamily: F.sans, fontSize: 13, color: MUTED, textAlign: 'center', margin: '0 0 16px' },
 
   actions: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 },
   checkoutBtn: {
@@ -445,19 +462,11 @@ const cs = {
   continueBtn: {
     width: '100%', padding: 14, backgroundColor: CREAM, color: MUTED,
     border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 15,
-    fontWeight: 600, fontFamily: F.sans,
+    fontWeight: 600, fontFamily: F.sans, cursor: 'pointer',
   },
-  secureNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '0 0 6px',
-  },
-  promoNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE,
-    fontWeight: 600, margin: 0,
-  },
-  npcfNote: {
-    textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED,
-    margin: 0, lineHeight: 1.5,
-  },
+  secureNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: '0 0 6px' },
+  promoNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: WINE, fontWeight: 600, margin: 0 },
+  npcfNote: { textAlign: 'center', fontFamily: F.sans, fontSize: 12, color: MUTED, margin: 0, lineHeight: 1.5 },
   donationLine: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     borderTop: `1px dashed ${BORDER}`, paddingTop: 8, marginTop: 8,
