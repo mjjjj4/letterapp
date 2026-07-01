@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/deliver-capsules",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/send-countdown-emails",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/send-countdown-emails",
+      "schedule": "0 23 * * *"
     }
   ]
 }
