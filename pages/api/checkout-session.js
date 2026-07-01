@@ -171,15 +171,26 @@ export default async function handler(req, res) {
     // Seal promo items immediately for free
     if (promoItems.length > 0) {
       for (const item of promoItems) {
+        // Step 1: seal using only original columns — always safe regardless of schema cache
         const { error: sealError } = await supabaseAdmin
           .from('capsules')
-          .update({ status: 'sealed', deliver_at: item.deliveryDate, is_founder_promo: true })
+          .update({ status: 'sealed', deliver_at: item.deliveryDate })
           .eq('id', item.capsuleId)
 
         if (sealError) {
           console.error(`Failed to seal promo capsule ${item.capsuleId}:`, sealError.message)
           return res.status(500).json({ error: `Failed to seal "${item.title}": ${sealError.message}` })
         }
+
+        // Step 2: mark as founder promo — non-fatal if schema cache hasn't refreshed yet
+        const { error: promoError } = await supabaseAdmin
+          .from('capsules')
+          .update({ is_founder_promo: true })
+          .eq('id', item.capsuleId)
+        if (promoError) {
+          console.warn(`  Could not set is_founder_promo for ${item.capsuleId} (schema cache?):`, promoError.message)
+        }
+
         console.log(`  Sealed (free): "${item.title}" → ${item.deliveryDate}`)
       }
 
