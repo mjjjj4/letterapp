@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const APP_URL = 'https://letterapp-black.vercel.app'
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://letterapp-black.vercel.app').replace(/\/$/, '')
 
 function deliveryEmailHtml(capsule) {
   return `
@@ -150,6 +150,7 @@ export default async function handler(req, res) {
       console.log(`  Sending to: ${userEmail}`)
 
       const deliveryDateFormatted = new Date(capsule.deliver_at).toLocaleDateString('en-US', {
+        timeZone: 'UTC',
         weekday: 'long',
         year: 'numeric',
         month: 'long',
