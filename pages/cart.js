@@ -17,6 +17,14 @@ const F = { serif: "'Playfair Display','Georgia',serif", sans: "'Inter',Arial,sa
 function digitsOnly(s) { return (s || '').replace(/\D/g, '') }
 function isValidEmail(e) { return /\S+@\S+\.\S+/.test(e || '') }
 
+function formatPhoneNumber(input) {
+  const cleaned = input.replace(/\D/g, '').slice(0, 10)
+  if (cleaned.length === 0) return ''
+  if (cleaned.length <= 3) return '(' + cleaned
+  if (cleaned.length <= 6) return '(' + cleaned.slice(0, 3) + ') ' + cleaned.slice(3)
+  return '(' + cleaned.slice(0, 3) + ') ' + cleaned.slice(3, 6) + '-' + cleaned.slice(6)
+}
+
 export default function Cart() {
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -333,7 +341,7 @@ export default function Cart() {
                         <input
                           type="tel"
                           value={selfPhone}
-                          onChange={e => setSelfPhone(e.target.value)}
+                          onChange={e => setSelfPhone(formatPhoneNumber(e.target.value))}
                           placeholder="(555) 123-4567"
                           style={cs.phoneInput}
                         />
@@ -388,7 +396,7 @@ export default function Cart() {
                         <input
                           type="tel"
                           value={selfPhone}
-                          onChange={e => setSelfPhone(e.target.value)}
+                          onChange={e => setSelfPhone(formatPhoneNumber(e.target.value))}
                           placeholder="(555) 123-4567"
                           style={cs.phoneInput}
                         />
